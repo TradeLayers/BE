@@ -19,7 +19,7 @@ type Config struct {
 }
 
 func Load() *Config {
-	_ = godotenv.Load()
+	_ = godotenv.Load() //nolint:errcheck // .env is optional
 
 	return &Config{
 		AppPort:    getEnv("APP_PORT", "5000"),

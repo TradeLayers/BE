@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to init logger: %v", err)
 	}
-	defer logger.Sync()
+	defer logger.Sync() //nolint:errcheck // best-effort flush
 
 	db, err := database.Connect(cfg)
 	if err != nil {
