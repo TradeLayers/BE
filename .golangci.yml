@@ -6,7 +6,6 @@ linters:
     - errcheck
     - govet
     - staticcheck
-    - typecheck
 
     # Bug prevention
     - bodyclose
