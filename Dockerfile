@@ -10,7 +10,7 @@
 
   # Copy source
   COPY . .
-  RUN CGO_ENABLED=0 go build -o server ./cmd/app
+  RUN CGO_ENABLED=0 go build -o server ./cmd/api
 
   # Run stage
   FROM alpine:3.21
