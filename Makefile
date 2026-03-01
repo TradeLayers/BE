@@ -3,7 +3,7 @@ export
 
 DATABASE_URL ?= postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSLMODE)
 
-.PHONY: run build test migrate-up migrate-down migrate-create
+.PHONY: run build test migrate-up migrate-down migrate-create docker-up docker-down docker-logs
 
 run:
 	go run cmd/api/main.go
@@ -22,3 +22,15 @@ migrate-down:
 
 migrate-create:
 	migrate create -ext sql -dir migrations -seq $(name)
+
+# Docker (runs docker-compose from Utilities repo)
+UTILITIES_DIR := ../Utilities
+
+docker-up:
+	cd $(UTILITIES_DIR) && docker-compose up --build -d
+
+docker-down:
+	cd $(UTILITIES_DIR) && docker-compose down
+
+docker-logs:
+	cd $(UTILITIES_DIR) && docker-compose logs -f backend

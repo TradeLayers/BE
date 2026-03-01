@@ -1,6 +1,8 @@
 # TradeLayers Backend
 
-Go backend API for TradeLayers.
+**Related repos:** [Frontend (FE)](https://github.com/TradeLayers/FE) | [Utilities](https://github.com/TradeLayers/Utilities)
+
+A stock trading simulation app where users can practice trading with real-time market prices without financial risk. Uses the [Finnhub API](https://finnhub.io/) for live stock data. Built with Go and Gin.
 
 ## Prerequisites
 
@@ -203,6 +205,26 @@ make run
 
 The server starts on `http://localhost:5000`.
 
+## Running with Docker
+
+The full-stack Docker setup lives in the [Utilities repo](https://github.com/TradeLayers/Utilities). It runs PostgreSQL, the backend, and the frontend together using `docker-compose`.
+
+**Prerequisites:** Docker and Docker Compose installed, and the [Utilities](https://github.com/TradeLayers/Utilities) repo cloned as a sibling directory (`../Utilities/`).
+
+```bash
+make docker-up     # Build and start all services (detached)
+make docker-down   # Stop and remove all containers
+make docker-logs   # Follow backend logs
+```
+
+These commands run `docker-compose` from the Utilities repo. Under the hood:
+- `docker-compose up --build -d` — builds images from `../BE` and `../FE`, starts postgres + backend + frontend
+- `docker-compose down` — stops everything
+
+Once running:
+- Backend: http://localhost:5000
+- Frontend: http://localhost:3000
+
 ## Make Commands
 
 | Command | Description |
@@ -213,6 +235,9 @@ The server starts on `http://localhost:5000`.
 | `make migrate-up` | Apply migrations (requires `DATABASE_URL`) |
 | `make migrate-down` | Rollback migrations (requires `DATABASE_URL`) |
 | `make migrate-create name=<name>` | Create new migration |
+| `make docker-up` | Build and start all services via docker-compose |
+| `make docker-down` | Stop and remove all containers |
+| `make docker-logs` | Follow backend container logs |
 
 ## API
 
