@@ -1,4 +1,5 @@
-version: "2"
+run:
+  timeout: 5m
 
 linters:
   enable:
@@ -24,30 +25,23 @@ linters:
     # Security
     - gosec
 
-  settings:
-    gocritic:
-      enabled-tags:
-        - diagnostic
-        - performance
+linters-settings:
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
 
-    revive:
-      rules:
-        - name: exported
-          disabled: true
-
-  exclusions:
-    paths:
-      - vendor/
+  revive:
     rules:
-      - path: _test\.go
-        linters:
-          - gosec
-          - errcheck
+      - name: exported
+        disabled: true
 
-formatters:
-  enable:
-    - gofmt
-    - goimports
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
 
-run:
-  timeout: 5m
+  exclude-dirs:
+    - vendor
