@@ -17,7 +17,6 @@ func FirebaseAuth(authClient *auth.Client) gin.HandlerFunc {
 		}
 
 		tokenString := strings.TrimPrefix(header, "Bearer ")
-
 		token, err := authClient.VerifyIDToken(c.Request.Context(), tokenString)
 		if err != nil {
 			c.AbortWithStatus(401)
