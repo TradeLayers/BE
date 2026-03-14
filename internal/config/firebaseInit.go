@@ -2,21 +2,16 @@ package config
 
 import (
 	"context"
-	"os"
 
 	firebase "firebase.google.com/go"
 	"google.golang.org/api/option"
 )
 
 func InitFirebase() (*firebase.App, error) {
-	const firebaseConfig = "firebase.json"
-	if _, err := os.Stat(firebaseConfig); err != nil {
-		return nil, err
-	}
+	ctx := context.Background()
+	opt := option.WithAuthCredentialsFile(option.ServiceAccount, "firebase.json")
 
-	opt := option.WithCredentialsFile(firebaseConfig)
-
-	app, err := firebase.NewApp(context.Background(), nil, opt)
+	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
 		return nil, err
 	}
