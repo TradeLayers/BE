@@ -8,14 +8,13 @@ import (
 	"google.golang.org/api/option"
 )
 
-const fileName = "firebase.json"
-
 func InitFirebase() (*firebase.App, error) {
-	if _, err := os.Stat(fileName); err != nil {
+	const firebaseConfig = "firebase.json"
+	if _, err := os.Stat(firebaseConfig); err != nil {
 		return nil, err
 	}
 
-	opt := option.WithCredentialsFile(fileName)
+	opt := option.WithCredentialsFile(firebaseConfig)
 
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
