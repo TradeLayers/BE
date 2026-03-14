@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"go.uber.org/zap"
@@ -13,6 +14,16 @@ import (
 
 func main() {
 	cfg := config.Load()
+
+	app, err := config.InitFirebase()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	authClient, err := app.Auth(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	logger, err := zap.NewDevelopment()
 	if cfg.LogLevel == "production" {
@@ -29,7 +40,7 @@ func main() {
 	}
 	logger.Info("database connected")
 
-	r := router.Setup(db, logger)
+	r := router.Setup(db, logger, authClient)
 
 	server.Run(cfg.AppPort, r, logger)
 }

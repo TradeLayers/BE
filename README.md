@@ -197,7 +197,19 @@ The Makefile automatically loads your `.env` file and builds `DATABASE_URL` from
 make migrate-up
 ```
 
-### 8. Start the server
+### 8. Firebase Configuration & Credentials
+
+To run this project locally, you need to set up your Firebase credentials for both the frontend and the backend.
+
+The backend uses the Admin SDK to perform migrations and manage users. You need a `firebase.json` file in your root directory.
+
+1. Go to the [Firebase Console Project Overview](https://console.firebase.google.com/project/app-local-8bfd8/overview).
+2. Click the **Gear icon (⚙️)** > **Project settings**.
+3. Select the **Service accounts** tab.
+4. Click **Generate new private key**.
+5. A JSON file will download. **Rename it to `firebase.json`** and move it to the root of this project.
+
+### 9. Start the server
 
 ```bash
 make run

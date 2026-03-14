@@ -1,5 +1,5 @@
   # Base image
-  FROM golang:1.24-alpine AS builder
+  FROM golang:1.25-alpine AS builder
 
   # Working directory
   WORKDIR /app
@@ -10,11 +10,14 @@
 
   # Copy source
   COPY . .
+  COPY firebase.json .
   RUN CGO_ENABLED=0 go build -o server ./cmd/api
 
   # Run stage
   FROM alpine:3.21
   WORKDIR /app
   COPY --from=builder /app/server .
+  COPY firebase.json .
+
   EXPOSE 5000
   CMD ["./server"]
