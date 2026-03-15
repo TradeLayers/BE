@@ -9,6 +9,7 @@ tmp/
 
 # Environment
 .env
+firebase.json
 
 # IDE
 .idea/

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"firebase.google.com/go/auth"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -10,10 +11,11 @@ import (
 	"github.com/TradeLayers/BE/internal/middleware"
 )
 
-func Setup(db *gorm.DB, logger *zap.Logger) *gin.Engine {
+func Setup(db *gorm.DB, logger *zap.Logger, authClient *auth.Client) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.ZapLogger(logger))
+
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -23,9 +25,14 @@ func Setup(db *gorm.DB, logger *zap.Logger) *gin.Engine {
 
 	healthHandler := handler.NewHealthHandler(db)
 
-	api := r.Group("/api/v1")
+	api := r.Group("/api")
 	{
 		api.GET("/health", healthHandler.Health)
+
+		protected := api.Group("/")
+		protected.Use(middleware.FirebaseAuth(authClient))
+
+		protected.GET("/user", handler.GetPortfolio)
 	}
 
 	return r
