@@ -34,7 +34,7 @@ func (h *PortfolioHandler) CreatePortfolio(c *gin.Context) {
 
 	portfolio, err := h.service.CreatePortfolio(c.Request.Context(), req.Name, *req.InitialBalance)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create portfolio"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create portfolio", "details": err.Error()})
 		return
 	}
 

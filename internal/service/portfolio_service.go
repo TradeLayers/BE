@@ -6,6 +6,7 @@ import (
 
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
+	"github.com/google/uuid"
 )
 
 type PortfolioService interface {
@@ -24,6 +25,7 @@ func (s *portfolioService) CreatePortfolio(ctx context.Context, name string, ini
 	now := time.Now()
 
 	p := &model.Portfolio{
+		ID:             uuid.New(),
 		Name:           name,
 		Balance:        initialBalance,
 		InitialBalance: initialBalance,
