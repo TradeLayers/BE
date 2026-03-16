@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Portfolio represents a user portfolio in the database.
+// Portfolio represents an investment portfolio.
 type Portfolio struct {
 	ID             uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	Name           string    `gorm:"type:varchar(255);not null"`
@@ -20,3 +20,4 @@ type Portfolio struct {
 func (Portfolio) TableName() string {
 	return "portfolios"
 }
+
