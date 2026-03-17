@@ -25,20 +25,16 @@ func Setup(db *gorm.DB, logger *zap.Logger, authClient *auth.Client) *gin.Engine
 		AllowCredentials: true,
 	}))
 
-	healthHandler := handler.NewHealthHandler(db)
-	portfolioRepo := repository.NewPortfolioRepository(db)
-	portfolioService := service.NewPortfolioService(portfolioRepo)
-	portfolioHandler := handler.NewPortfolioHandler(portfolioService)
+	userRepo := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepo)
+	userHandler := handler.NewUserHandler(userService)
 
 	api := r.Group("/api")
 	{
-		api.GET("/health", healthHandler.Health)
-
-		protected := api.Group("/")
+		protected := api.Group("")
 		protected.Use(middleware.FirebaseAuth(authClient))
 
-		protected.GET("/user", handler.GetPortfolio)
-		protected.POST("/portfolios", portfolioHandler.CreatePortfolio)
+		protected.GET("/user", userHandler.CreateOrFetchUser)
 	}
 
 	return r

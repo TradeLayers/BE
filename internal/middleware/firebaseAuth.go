@@ -5,6 +5,8 @@ import (
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
+
+	"github.com/TradeLayers/BE/internal/model"
 )
 
 func FirebaseAuth(authClient *auth.Client) gin.HandlerFunc {
@@ -23,8 +25,13 @@ func FirebaseAuth(authClient *auth.Client) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", token.UID)
+		authUser := model.UserContext{
+			FirebaseId: token.UID,
+			Email:      token.Claims["email"].(string),
+			Name:       token.Claims["name"].(string),
+		}
 
+		c.Set("userContext", authUser)
 		c.Next()
 	}
 }

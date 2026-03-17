@@ -1,0 +1,32 @@
+package model
+
+import (
+	"time"
+)
+
+type User struct {
+	FirebaseId string    `gorm:"type:text;primaryKey" json:"firebaseId"`
+	Name       string    `gorm:"type:varchar(255);not null" json:"name"`
+	Email      string    `gorm:"type:varchar(255);not null" json:"email"`
+	Balance    float64   `gorm:"type:decimal(20,2);default:500.00" json:"balance"`
+	CreatedAt  time.Time `gorm:"type:timestamp;not null;autoCreateTime" json:"createdAt"`
+	LastOnline time.Time `gorm:"type:timestamp;not null;autoUpdateTime" json:"lastOnline"`
+}
+
+type UserContext struct {
+	FirebaseId string
+	Email      string
+	Name       string
+}
+
+type FetchedOrCreated int
+
+const (
+	UserCreated FetchedOrCreated = iota
+	UserFetched
+	None
+)
+
+func (User) TableName() string {
+	return "users"
+}
