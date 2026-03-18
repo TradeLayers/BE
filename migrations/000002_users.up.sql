@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
     firebase_id TEXT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
     balance DECIMAL(13,2) NOT NULL DEFAULT 500.00,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     last_online TIMESTAMP NOT NULL DEFAULT NOW()

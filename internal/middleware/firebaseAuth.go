@@ -25,10 +25,16 @@ func FirebaseAuth(authClient *auth.Client) gin.HandlerFunc {
 			return
 		}
 
+		Email, ok := token.Claims["email"].(string)
+
+		if !ok {
+			Email = ""
+		}
+
 		authUser := model.UserContext{
 			FirebaseId: token.UID,
-			Email:      token.Claims["email"].(string),
 			Name:       token.Claims["name"].(string),
+			Email:      Email,
 		}
 
 		c.Set("userContext", authUser)
