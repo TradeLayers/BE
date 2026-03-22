@@ -20,7 +20,7 @@ jobs:
               uses: google-github-actions/run-gemini-cli@v0
               with:
                   gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-                  model: gemini-1.5-flash
+                  gemini_model: gemini-1.5-flash
                   prompt: |
                       Review this pull request like a senior software engineer.
 
