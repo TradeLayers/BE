@@ -1,38 +1,39 @@
 name: Gemini PR Review
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+    pull_request:
+        types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
-  pull-requests: write
+    contents: read
+    pull-requests: write
 
 jobs:
-  review:
-    runs-on: ubuntu-latest
+    review:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
 
-      - name: Run Gemini CLI review
-        uses: google-github-actions/run-gemini-cli@v0
-        with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          prompt: |
-            Review this pull request like a senior software engineer.
+            - name: Run Gemini CLI review
+              uses: google-github-actions/run-gemini-cli@v0
+              with:
+                  gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+                  model: gemini-1.5-flash
+                  prompt: |
+                      Review this pull request like a senior software engineer.
 
-            Focus on:
-            - correctness
-            - bugs
-            - security issues
-            - edge cases
-            - readability
-            - maintainability
+                      Focus on:
+                      - correctness
+                      - bugs
+                      - security issues
+                      - edge cases
+                      - readability
+                      - maintainability
 
-            Give:
-            1. a short summary
-            2. blocking issues
-            3. non-blocking suggestions
-            4. a final recommendation
+                      Give:
+                      1. a short summary
+                      2. blocking issues
+                      3. non-blocking suggestions
+                      4. a final recommendation
