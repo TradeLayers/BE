@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net/http"
 	"strings"
 
 	"firebase.google.com/go/auth"
@@ -14,27 +15,33 @@ func FirebaseAuth(authClient *auth.Client) gin.HandlerFunc {
 
 		header := c.GetHeader("Authorization")
 		if header == "" {
-			c.AbortWithStatus(401)
+			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		tokenString := strings.TrimPrefix(header, "Bearer ")
 		token, err := authClient.VerifyIDToken(c.Request.Context(), tokenString)
 		if err != nil {
-			c.AbortWithStatus(401)
+			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		Email, ok := token.Claims["email"].(string)
+		email, ok := token.Claims["email"].(string)
 
 		if !ok {
-			Email = ""
+			email = ""
+		}
+
+		name, ok := token.Claims["name"].(string)
+
+		if !ok {
+			name = ""
 		}
 
 		authUser := model.UserContext{
 			FirebaseId: token.UID,
-			Name:       token.Claims["name"].(string),
-			Email:      Email,
+			Email:      email,
+			Name:       name,
 		}
 
 		c.Set("userContext", authUser)

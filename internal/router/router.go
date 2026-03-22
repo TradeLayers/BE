@@ -19,7 +19,7 @@ func Setup(db *gorm.DB, logger *zap.Logger, authClient *auth.Client) *gin.Engine
 	r.Use(middleware.ZapLogger(logger))
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -34,7 +34,7 @@ func Setup(db *gorm.DB, logger *zap.Logger, authClient *auth.Client) *gin.Engine
 		protected := api.Group("")
 		protected.Use(middleware.FirebaseAuth(authClient))
 
-		protected.GET("/user", userHandler.CreateOrFetchUser)
+		protected.POST("/user", userHandler.CreateOrFetchUser)
 	}
 
 	return r
