@@ -1,0 +1,34 @@
+name: Gemini PR Review
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+
+jobs:
+    review:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - run: mkdir -p /home/runner/.gemini
+
+            - uses: google-github-actions/run-gemini-cli@v0
+              with:
+                  gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+                  prompt: |
+                      Review this pull request like a senior software engineer.
+
+                      Focus on:
+                      - correctness
+                      - bugs
+                      - security issues
+                      - edge cases
+                      - readability
+                      - maintainability
+
+                      Give:
+                      1. a short summary
+                      2. blocking issues
+                      3. non-blocking suggestions
+                      4. a final recommendation

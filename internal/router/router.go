@@ -1,6 +1,8 @@
 package router
 
 import (
+	"os"
+
 	"firebase.google.com/go/auth"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -18,27 +20,25 @@ func Setup(db *gorm.DB, logger *zap.Logger, authClient *auth.Client) *gin.Engine
 	r.Use(gin.Recovery())
 	r.Use(middleware.ZapLogger(logger))
 
+	frontendUrl := os.Getenv("FRONTEND_URL")
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{frontendUrl},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
 
-	healthHandler := handler.NewHealthHandler(db)
-	portfolioRepo := repository.NewPortfolioRepository(db)
-	portfolioService := service.NewPortfolioService(portfolioRepo)
-	portfolioHandler := handler.NewPortfolioHandler(portfolioService)
+	userRepo := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepo)
+	userHandler := handler.NewUserHandler(userService)
 
 	api := r.Group("/api")
 	{
-		api.GET("/health", healthHandler.Health)
-
-		protected := api.Group("/")
+		protected := api.Group("")
 		protected.Use(middleware.FirebaseAuth(authClient))
 
-		protected.GET("/user", handler.GetPortfolio)
-		protected.POST("/portfolios", portfolioHandler.CreatePortfolio)
+		protected.POST("/user", userHandler.CreateOrFetchUser)
 	}
 
 	return r

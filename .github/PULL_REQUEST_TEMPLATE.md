@@ -1,18 +1,14 @@
 ## Jira Ticket
 
-[STC-XXX](https://your-org.atlassian.net/browse/STC-XXX)
+Example: [STC-XXX](https://your-org.atlassian.net/browse/STC-XXX)
 
 ## Summary
 
-<!-- Short description (2-3 sentences) of what this PR does -->
-
-## Description
-
-<!-- Detailed explanation of the changes, motivation, and context -->
+Example: Create a feature were users can register or log in into their account. Fixed couple of bugs.
 
 ## Screenshots
 
-<!-- Add relevant screenshots/recordings if applicable. Remove this section if not needed. -->
+Example: couple of screen shots
 
 ## Checklist
 
