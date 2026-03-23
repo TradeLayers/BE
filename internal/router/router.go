@@ -1,6 +1,8 @@
 package router
 
 import (
+	"os"
+
 	"firebase.google.com/go/auth"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -18,8 +20,10 @@ func Setup(db *gorm.DB, logger *zap.Logger, authClient *auth.Client) *gin.Engine
 	r.Use(gin.Recovery())
 	r.Use(middleware.ZapLogger(logger))
 
+	frontendUrl := os.Getenv("FRONTEND_URL")
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     []string{frontendUrl},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,

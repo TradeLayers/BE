@@ -20,7 +20,7 @@ func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
 	userObj, exists := c.Get("userContext")
 
 	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User context missing"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context missing"})
 		return
 	}
 
@@ -32,7 +32,7 @@ func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
 
 	user, state, err := h.service.CreateOrFetchUser(userCtx)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to process user request"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process user request"})
 		return
 	}
 
