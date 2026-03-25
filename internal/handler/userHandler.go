@@ -43,3 +43,55 @@ func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
 
 	c.JSON(code, user)
 }
+
+func (h *UserHandler) UpdateFields(c *gin.Context) {
+	userObj, exists := c.Get("userContext")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context missing"})
+		return
+	}
+
+	userCtx, ok := userObj.(model.UserContext)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	var req model.UpdateFieldsDto
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	user, err := h.service.UpdateFields(userCtx, req)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+func (h *UserHandler) DeleteUserAccount(c *gin.Context) {
+	userObj, exists := c.Get("userContext")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context missing"})
+		return
+	}
+
+	userCtx, ok := userObj.(model.UserContext)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	err := h.service.DeleteUser(userCtx)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}

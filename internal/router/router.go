@@ -39,6 +39,8 @@ func Setup(db *gorm.DB, logger *zap.Logger, authClient *auth.Client) *gin.Engine
 		protected.Use(middleware.FirebaseAuth(authClient))
 
 		protected.POST("/user", userHandler.CreateOrFetchUser)
+		protected.PATCH("/user", userHandler.UpdateFields)
+		protected.DELETE("/user", userHandler.DeleteUserAccount)
 	}
 
 	return r
