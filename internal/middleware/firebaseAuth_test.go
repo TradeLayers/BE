@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"firebase.google.com/go/auth"
@@ -150,14 +151,8 @@ func TestFirebaseAuth(t *testing.T) {
 				if capturedContext == nil {
 					t.Fatal("expected user context but got nil")
 				}
-				if capturedContext.FirebaseId != tt.expectedContext.FirebaseId {
-					t.Errorf("expected FirebaseId %s, got %s", tt.expectedContext.FirebaseId, capturedContext.FirebaseId)
-				}
-				if capturedContext.Email != tt.expectedContext.Email {
-					t.Errorf("expected Email %s, got %s", tt.expectedContext.Email, capturedContext.Email)
-				}
-				if capturedContext.Name != tt.expectedContext.Name {
-					t.Errorf("expected Name %s, got %s", tt.expectedContext.Name, capturedContext.Name)
+				if !reflect.DeepEqual(*capturedContext, *tt.expectedContext) {
+					t.Errorf("expected context %+v, got %+v", *tt.expectedContext, *capturedContext)
 				}
 			}
 		})

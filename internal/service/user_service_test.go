@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/TradeLayers/BE/internal/model"
@@ -128,58 +129,61 @@ func TestUpdateFields(t *testing.T) {
 	whitespace := "   "
 
 	tests := []struct {
-		name        string
-		fields      model.UpdateFieldsDto
-		setupMock   func(mock *repository.MockUserRepository, updatedFields *map[string]interface{})
-		expectError bool
+		name            string
+		fields          model.UpdateFieldsDto
+		setupMock       func(mock *repository.MockUserRepository)
+		expectedUpdates map[string]interface{}
+		expectError     bool
 	}{
 		{
 			name:   "updates both email and name",
 			fields: model.UpdateFieldsDto{Email: &newEmail, Name: &newName},
-			setupMock: func(mock *repository.MockUserRepository, updatedFields *map[string]interface{}) {
+			setupMock: func(mock *repository.MockUserRepository) {
 				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
-					*updatedFields = updates
 					return nil
 				}
 				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
 					return &model.User{FirebaseId: "firebase-123", Email: newEmail, Name: newName}, nil
 				}
 			},
-			expectError: false,
+			expectedUpdates: map[string]interface{}{"email": newEmail, "name": newName},
+			expectError:     false,
 		},
 		{
 			name:   "updates only email when name is nil",
 			fields: model.UpdateFieldsDto{Email: &newEmail, Name: nil},
-			setupMock: func(mock *repository.MockUserRepository, updatedFields *map[string]interface{}) {
+			setupMock: func(mock *repository.MockUserRepository) {
 				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
-					*updatedFields = updates
 					return nil
 				}
 				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
 					return &model.User{FirebaseId: "firebase-123", Email: newEmail}, nil
 				}
 			},
-			expectError: false,
+			expectedUpdates: map[string]interface{}{"email": newEmail},
+			expectError:     false,
 		},
 		{
 			name:   "whitespace-only fields are skipped",
 			fields: model.UpdateFieldsDto{Email: &whitespace, Name: &whitespace},
-			setupMock: func(mock *repository.MockUserRepository, updatedFields *map[string]interface{}) {
+			setupMock: func(mock *repository.MockUserRepository) {
 				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
 					return errors.New("no fields to update")
 				}
 			},
-			expectError: true,
+			expectedUpdates: nil,
+			expectError:     true,
 		},
 		{
 			name:   "UpdateUser fails - returns error",
 			fields: model.UpdateFieldsDto{Email: &newEmail, Name: &newName},
-			setupMock: func(mock *repository.MockUserRepository, updatedFields *map[string]interface{}) {
+			setupMock: func(mock *repository.MockUserRepository) {
 				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
 					return errors.New("database error")
 				}
 			},
-			expectError: true,
+			expectedUpdates: nil,
+			expectError:     true,
 		},
 	}
 
@@ -188,8 +192,17 @@ func TestUpdateFields(t *testing.T) {
 			mock, svc := setupUserService()
 			defer teardownUserService()
 
-			var updatedFields map[string]interface{}
-			tt.setupMock(mock, &updatedFields)
+			tt.setupMock(mock)
+
+			// Wrap UpdateUserFn to capture what map was passed to the repository
+			var capturedUpdates map[string]interface{}
+			if mock.UpdateUserFn != nil {
+				original := mock.UpdateUserFn
+				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
+					capturedUpdates = updates
+					return original(ctx, updates)
+				}
+			}
 
 			user, err := svc.UpdateFields(userCtx, tt.fields)
 
@@ -205,21 +218,8 @@ func TestUpdateFields(t *testing.T) {
 			}
 
 			// Verify correct fields were sent to repository
-			if tt.name == "updates both email and name" {
-				if updatedFields["email"] != newEmail {
-					t.Errorf("expected email %s, got %v", newEmail, updatedFields["email"])
-				}
-				if updatedFields["name"] != newName {
-					t.Errorf("expected name %s, got %v", newName, updatedFields["name"])
-				}
-			}
-			if tt.name == "updates only email when name is nil" {
-				if updatedFields["email"] != newEmail {
-					t.Errorf("expected email %s, got %v", newEmail, updatedFields["email"])
-				}
-				if _, exists := updatedFields["name"]; exists {
-					t.Error("expected name field to not be in updates")
-				}
+			if tt.expectedUpdates != nil && !reflect.DeepEqual(capturedUpdates, tt.expectedUpdates) {
+				t.Errorf("expected updates %+v, got %+v", tt.expectedUpdates, capturedUpdates)
 			}
 		})
 	}
