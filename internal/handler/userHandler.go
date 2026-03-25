@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/TradeLayers/BE/internal/model"
@@ -16,21 +17,28 @@ func NewUserHandler(s service.UserService) *UserHandler {
 	return &UserHandler{service: s}
 }
 
-func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
+func getUserContext(c *gin.Context) (*model.UserContext, error) {
 	userObj, exists := c.Get("userContext")
-
 	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context missing"})
-		return
+		return nil, errors.New("User context missing")
 	}
 
 	userCtx, ok := userObj.(model.UserContext)
 	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user context"})
+		return nil, errors.New("Invalid user context")
+	}
+
+	return &userCtx, nil
+}
+
+func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
+	userCtx, err := getUserContext(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, state, err := h.service.CreateOrFetchUser(userCtx)
+	user, state, err := h.service.CreateOrFetchUser(*userCtx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process user request"})
 		return
@@ -45,15 +53,9 @@ func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
 }
 
 func (h *UserHandler) UpdateFields(c *gin.Context) {
-	userObj, exists := c.Get("userContext")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context missing"})
-		return
-	}
-
-	userCtx, ok := userObj.(model.UserContext)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user context"})
+	userCtx, err := getUserContext(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -63,10 +65,10 @@ func (h *UserHandler) UpdateFields(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.UpdateFields(userCtx, req)
+	user, err := h.service.UpdateFields(*userCtx, req)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
 		return
 	}
 
@@ -74,22 +76,16 @@ func (h *UserHandler) UpdateFields(c *gin.Context) {
 }
 
 func (h *UserHandler) DeleteUserAccount(c *gin.Context) {
-	userObj, exists := c.Get("userContext")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context missing"})
+	userCtx, err := getUserContext(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	userCtx, ok := userObj.(model.UserContext)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user context"})
-		return
-	}
-
-	err := h.service.DeleteUser(userCtx)
+	err = h.service.DeleteUser(*userCtx)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

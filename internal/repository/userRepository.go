@@ -64,6 +64,17 @@ func (r *userRepository) UpdateUser(userCtx model.UserContext, updates map[strin
 }
 
 func (r *userRepository) DeleteUser(userCtx model.UserContext) error {
-	err := r.db.Where("firebase_id = ?", userCtx.FirebaseId).Delete(&model.User{}).Error
-	return err
+	result := r.db.
+		Where("firebase_id = ?", userCtx.FirebaseId).
+		Delete(&model.User{})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

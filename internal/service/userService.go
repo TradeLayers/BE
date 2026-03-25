@@ -1,16 +1,11 @@
 package service
 
 import (
-	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
 )
-
-var seededRand *rand.Rand = rand.New(
-	rand.NewSource(time.Now().UnixNano()))
 
 type UserService interface {
 	CreateOrFetchUser(userCtx model.UserContext) (*model.User, model.FetchedOrCreated, error)
