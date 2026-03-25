@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/TradeLayers/BE/internal/model"
 	"gorm.io/gorm"
 )
@@ -8,6 +10,8 @@ import (
 type UserRepository interface {
 	GetUser(userCtx model.UserContext) (*model.User, error)
 	CreateUser(userCtx model.UserContext) (*model.User, error)
+	UpdateUser(userCtx model.UserContext, updates map[string]interface{}) error
+	DeleteUser(userCtx model.UserContext) error
 }
 
 type userRepository struct {
@@ -25,9 +29,7 @@ func (r *userRepository) GetUser(userCtx model.UserContext) (*model.User, error)
 
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
-	}
-
-	if err != nil {
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -47,4 +49,32 @@ func (r *userRepository) CreateUser(userCtx model.UserContext) (*model.User, err
 	}
 
 	return &user, nil
+}
+
+func (r *userRepository) UpdateUser(userCtx model.UserContext, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return errors.New("no fields to update")
+	}
+
+	err := r.db.Model(&model.User{}).
+		Where("firebase_id = ?", userCtx.FirebaseId).
+		Updates(updates).Error
+
+	return err
+}
+
+func (r *userRepository) DeleteUser(userCtx model.UserContext) error {
+	result := r.db.
+		Where("firebase_id = ?", userCtx.FirebaseId).
+		Delete(&model.User{})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

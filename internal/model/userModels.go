@@ -19,6 +19,11 @@ type UserContext struct {
 	Name       string
 }
 
+type UpdateFieldsDto struct {
+	Email *string `json:"email"`
+	Name  *string `json:"name"`
+}
+
 type FetchedOrCreated int
 
 const (
