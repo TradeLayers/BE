@@ -22,17 +22,6 @@ func (m *mockTokenVerifier) VerifyIDToken(ctx context.Context, idToken string) (
 	return m.verifyFn(ctx, idToken)
 }
 
-// setupRouter creates a Gin engine in test mode with the FirebaseAuth middleware.
-func setupRouter(verifier TokenVerifier) *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(FirebaseAuth(verifier))
-	r.GET("/protected", func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
-	return r
-}
-
 func TestFirebaseAuth(t *testing.T) {
 	tests := []struct {
 		name             string
