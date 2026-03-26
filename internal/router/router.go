@@ -21,7 +21,6 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		appErrors.ReturnError(c, appErrors.ErrInternal)
-		return
 	}))
 	r.Use(appLogger.HTTPMiddleware(log))
 

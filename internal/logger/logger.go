@@ -9,6 +9,7 @@ import (
 	"github.com/TradeLayers/BE/internal/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func New(cfg *config.Config) (*zap.Logger, error) {
@@ -16,41 +17,40 @@ func New(cfg *config.Config) (*zap.Logger, error) {
 		return nil, fmt.Errorf("create log directory: %w", err)
 	}
 
-	infoFile, err := os.OpenFile(
-		filepath.Join(cfg.LogDir, cfg.InfoLogFile),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
-		0o644,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("open info log file: %w", err)
-	}
-
-	errorFile, err := os.OpenFile(
-		filepath.Join(cfg.LogDir, cfg.ErrorLogFile),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
-		0o644,
-	)
-	if err != nil {
-		_ = infoFile.Close()
-		return nil, fmt.Errorf("open error log file: %w", err)
-	}
-
 	level := parseLevel(cfg.LogLevel)
+
 	encoderCfg := zap.NewProductionEncoderConfig()
 	encoderCfg.TimeKey = "timestamp"
 	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
 	encoder := zapcore.NewJSONEncoder(encoderCfg)
 
+	infoLogSyncer := zapcore.AddSync(&lumberjack.Logger{
+		Filename:   filepath.Join(cfg.LogDir, cfg.InfoLogFile),
+		MaxSize:    10,
+		MaxBackups: 3,
+		MaxAge:     28,
+		Compress:   true,
+	})
+
+	errorLogSyncer := zapcore.AddSync(&lumberjack.Logger{
+		Filename:   filepath.Join(cfg.LogDir, cfg.ErrorLogFile),
+		MaxSize:    10,
+		MaxBackups: 3,
+		MaxAge:     28,
+		Compress:   true,
+	})
+
 	infoCore := zapcore.NewCore(
 		encoder,
-		zapcore.AddSync(infoFile),
+		infoLogSyncer,
 		zap.LevelEnablerFunc(func(l zapcore.Level) bool {
 			return l >= level && l < zapcore.ErrorLevel
 		}),
 	)
+
 	errorCore := zapcore.NewCore(
 		encoder,
-		zapcore.AddSync(errorFile),
+		errorLogSyncer,
 		zap.LevelEnablerFunc(func(l zapcore.Level) bool {
 			return l >= zapcore.ErrorLevel
 		}),
