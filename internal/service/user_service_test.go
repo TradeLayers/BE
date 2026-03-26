@@ -185,6 +185,20 @@ func TestUpdateFields(t *testing.T) {
 			expectedUpdates: nil,
 			expectError:     true,
 		},
+		{
+			name:   "UpdateUser succeeds but GetUser fails",
+			fields: model.UpdateFieldsDto{Email: &newEmail},
+			setupMock: func(mock *repository.MockUserRepository) {
+				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
+					return nil
+				}
+				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
+					return nil, errors.New("database error")
+				}
+			},
+			expectedUpdates: map[string]interface{}{"email": newEmail},
+			expectError:     true,
+		},
 	}
 
 	for _, tt := range tests {
