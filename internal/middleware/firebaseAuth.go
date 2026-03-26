@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
 	"firebase.google.com/go/auth"
+	"github.com/TradeLayers/BE/internal/appErrors"
 	"github.com/gin-gonic/gin"
 
 	"github.com/TradeLayers/BE/internal/model"
@@ -20,14 +20,14 @@ func FirebaseAuth(authClient TokenVerifier) gin.HandlerFunc {
 
 		header := c.GetHeader("Authorization")
 		if header == "" {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			appErrors.ReturnError(c, appErrors.ErrNoAuthenticationHeader)
 			return
 		}
 
 		tokenString := strings.TrimPrefix(header, "Bearer ")
 		token, err := authClient.VerifyIDToken(c.Request.Context(), tokenString)
 		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			appErrors.ReturnError(c, appErrors.ErrJwtExpired)
 			return
 		}
 
