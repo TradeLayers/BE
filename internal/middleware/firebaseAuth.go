@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -10,7 +11,11 @@ import (
 	"github.com/TradeLayers/BE/internal/model"
 )
 
-func FirebaseAuth(authClient *auth.Client) gin.HandlerFunc {
+type TokenVerifier interface {
+	VerifyIDToken(ctx context.Context, idToken string) (*auth.Token, error)
+}
+
+func FirebaseAuth(authClient TokenVerifier) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		header := c.GetHeader("Authorization")
