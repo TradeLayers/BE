@@ -31,7 +31,7 @@ func TestCreateOrFetchUser(t *testing.T) {
 		FirebaseId: "firebase-123",
 		Name:       "Test User",
 		Email:      "test@example.com",
-		Balance:    decimal.NewFromInt(500),
+		Balance:    decimal.RequireFromString("500.00"),
 	}
 
 	tests := []struct {

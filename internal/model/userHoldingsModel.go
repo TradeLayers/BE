@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"google.golang.org/genproto/googleapis/type/decimal"
+	"github.com/shopspring/decimal"
 )
 
 type UserHoldings struct {
