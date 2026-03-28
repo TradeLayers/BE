@@ -8,6 +8,7 @@ import (
 	"github.com/TradeLayers/BE/internal/appErrors"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
+	"github.com/shopspring/decimal"
 )
 
 // setupUserService creates a mock repository and a user service for testing.
@@ -31,7 +32,7 @@ func TestCreateOrFetchUser(t *testing.T) {
 		FirebaseId: "firebase-123",
 		Name:       "Test User",
 		Email:      "test@example.com",
-		Balance:    500.00,
+		Balance:    decimal.RequireFromString("500.00"),
 	}
 
 	tests := []struct {

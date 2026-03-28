@@ -11,6 +11,9 @@ logs/
 # Environment
 .env
 firebase.json
+logs/
+*.log
+
 
 # IDE
 .idea/
