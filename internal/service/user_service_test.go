@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/TradeLayers/BE/internal/appErrors"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
 	"github.com/shopspring/decimal"
@@ -102,10 +103,10 @@ func TestCreateOrFetchUser(t *testing.T) {
 
 			user, status, err := svc.CreateOrFetchUser(userCtx)
 
-			if tt.expectError && err == nil {
-				t.Fatal("expected error but got nil")
+			if tt.expectError && err == appErrors.ErrNone {
+				t.Fatal("expected error but got none")
 			}
-			if !tt.expectError && err != nil {
+			if !tt.expectError && err != appErrors.ErrNone {
 				t.Fatalf("expected no error but got: %v", err)
 			}
 			if status != tt.expectedStatus {
@@ -221,10 +222,10 @@ func TestUpdateFields(t *testing.T) {
 
 			user, err := svc.UpdateFields(userCtx, tt.fields)
 
-			if tt.expectError && err == nil {
-				t.Fatal("expected error but got nil")
+			if tt.expectError && err == appErrors.ErrNone {
+				t.Fatal("expected error but got none")
 			}
-			if !tt.expectError && err != nil {
+			if !tt.expectError && err != appErrors.ErrNone {
 				t.Fatalf("expected no error but got: %v", err)
 			}
 
@@ -281,10 +282,10 @@ func TestDeleteUser(t *testing.T) {
 
 			err := svc.DeleteUser(userCtx)
 
-			if tt.expectError && err == nil {
-				t.Fatal("expected error but got nil")
+			if tt.expectError && err == appErrors.ErrNone {
+				t.Fatal("expected error but got none")
 			}
-			if !tt.expectError && err != nil {
+			if !tt.expectError && err != appErrors.ErrNone {
 				t.Fatalf("expected no error but got: %v", err)
 			}
 		})

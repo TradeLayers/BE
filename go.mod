@@ -4,12 +4,15 @@ go 1.25.0
 
 require (
 	firebase.google.com/go v3.13.0+incompatible
+	firebase.google.com/go v3.13.0+incompatible
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/shopspring/decimal v1.4.0
 	go.uber.org/zap v1.27.1
+	google.golang.org/api v0.271.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	google.golang.org/api v0.271.0
 	google.golang.org/genproto v0.0.0-20260128011058-8636f8732409
 	gorm.io/driver/postgres v1.6.0

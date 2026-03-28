@@ -3,33 +3,55 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	AppPort    string
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBSSLMode  string
-	LogLevel   string
+	AppPort      string
+	DBHost       string
+	DBPort       string
+	DBUser       string
+	DBPassword   string
+	DBName       string
+	DBSSLMode    string
+	LogLevel     string
+	LogDir       string
+	InfoLogFile  string
+	ErrorLogFile string
 }
 
 func Load() *Config {
-	_ = godotenv.Load() //nolint:errcheck // .env is optional
+	loadDotenv()
 
 	return &Config{
-		AppPort:    getEnv("APP_PORT", "5000"),
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		DBName:     getEnv("DB_NAME", "tradelayers"),
-		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
-		LogLevel:   getEnv("LOG_LEVEL", "debug"),
+		AppPort:      getEnv("APP_PORT", "5000"),
+		DBHost:       getEnv("DB_HOST", "localhost"),
+		DBPort:       getEnv("DB_PORT", "5432"),
+		DBUser:       getEnv("DB_USER", "postgres"),
+		DBPassword:   getEnv("DB_PASSWORD", "postgres"),
+		DBName:       getEnv("DB_NAME", "tradelayers"),
+		DBSSLMode:    getEnv("DB_SSLMODE", "disable"),
+		LogLevel:     getEnv("LOG_LEVEL", "debug"),
+		LogDir:       getEnv("LOG_DIR", "logs"),
+		InfoLogFile:  getEnv("INFO_LOG_FILE", "app.log"),
+		ErrorLogFile: getEnv("ERROR_LOG_FILE", "error.log"),
+	}
+}
+
+func loadDotenv() {
+	paths := []string{
+		".env",
+		filepath.Join("..", ".env"),
+		filepath.Join("..", "..", ".env"),
+	}
+
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			_ = godotenv.Overload(path) //nolint:errcheck // .env is optional
+			return
+		}
 	}
 }
 
