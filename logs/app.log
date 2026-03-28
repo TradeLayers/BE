@@ -1,0 +1,11 @@
+{"level":"info","timestamp":"2026-03-26T18:59:35.393Z","caller":"api/main.go:38","msg":"database connected"}
+{"level":"info","timestamp":"2026-03-26T18:59:35.393Z","caller":"server/server.go:23","msg":"server starting","port":"5000"}
+{"level":"info","timestamp":"2026-03-26T19:00:10.425Z","caller":"logger/http.go:22","msg":"http_request","method":"POST","path":"/api/user","status":200,"client_ip":"172.18.0.4","latency":0.127006992,"bytes_in":0,"bytes_out":212}
+{"level":"info","timestamp":"2026-03-26T21:27:50.769Z","caller":"server/server.go:33","msg":"shutting down server..."}
+{"level":"info","timestamp":"2026-03-26T21:27:50.783Z","caller":"server/server.go:42","msg":"server exited"}
+{"level":"info","timestamp":"2026-03-26T21:27:51.672Z","caller":"api/main.go:38","msg":"database connected"}
+{"level":"info","timestamp":"2026-03-26T21:27:51.672Z","caller":"server/server.go:23","msg":"server starting","port":"5000"}
+{"level":"info","timestamp":"2026-03-26T21:28:43.382Z","caller":"logger/http.go:22","msg":"http_request","method":"POST","path":"/api/user","status":200,"client_ip":"172.18.0.4","latency":0.130496882,"bytes_in":0,"bytes_out":212}
+{"level":"info","timestamp":"2026-03-26T21:28:53.919Z","caller":"logger/http.go:22","msg":"http_request","method":"POST","path":"/api/user","status":200,"client_ip":"172.18.0.4","latency":0.00097748,"bytes_in":0,"bytes_out":181}
+{"level":"info","timestamp":"2026-03-27T10:06:03.875Z","caller":"server/server.go:33","msg":"shutting down server..."}
+{"level":"info","timestamp":"2026-03-27T10:06:03.875Z","caller":"server/server.go:42","msg":"server exited"}
