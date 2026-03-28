@@ -4,43 +4,40 @@ import (
 	"context"
 	"log"
 
-	"go.uber.org/zap"
-
 	"github.com/TradeLayers/BE/internal/config"
 	"github.com/TradeLayers/BE/internal/database"
+	"github.com/TradeLayers/BE/internal/logger"
 	"github.com/TradeLayers/BE/internal/router"
 	"github.com/TradeLayers/BE/internal/server"
+	"go.uber.org/zap"
 )
 
 func main() {
 	cfg := config.Load()
 
+	zapLogger, err := logger.New(cfg)
+	if err != nil {
+		log.Fatalf("failed to init logger: %v", err)
+	}
+	defer zapLogger.Sync() //nolint:errcheck // best-effort flush
+
 	app, err := config.InitFirebase()
 	if err != nil {
-		log.Fatal(err)
+		zapLogger.Fatal("failed to initialize firebase app", zap.Error(err))
 	}
 
 	authClient, err := app.Auth(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		zapLogger.Fatal("failed to initialize firebase auth client", zap.Error(err))
 	}
-
-	logger, err := zap.NewDevelopment()
-	if cfg.LogLevel == "production" {
-		logger, err = zap.NewProduction()
-	}
-	if err != nil {
-		log.Fatalf("failed to init logger: %v", err)
-	}
-	defer logger.Sync() //nolint:errcheck // best-effort flush
 
 	db, err := database.Connect(cfg)
 	if err != nil {
-		logger.Fatal("failed to connect to database", zap.Error(err))
+		zapLogger.Fatal("failed to connect to database", zap.Error(err))
 	}
-	logger.Info("database connected")
+	zapLogger.Info("database connected")
 
-	r := router.Setup(db, logger, authClient)
+	r := router.Setup(db, zapLogger, authClient)
 
-	server.Run(cfg.AppPort, r, logger)
+	server.Run(cfg.AppPort, r, zapLogger)
 }

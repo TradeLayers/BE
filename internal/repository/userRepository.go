@@ -18,7 +18,7 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *userRepository {
+func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
@@ -27,7 +27,7 @@ func (r *userRepository) GetUser(userCtx model.UserContext) (*model.User, error)
 
 	err := r.db.Where("firebase_id = ?", userCtx.FirebaseId).First(&user).Error
 
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -52,14 +52,7 @@ func (r *userRepository) CreateUser(userCtx model.UserContext) (*model.User, err
 }
 
 func (r *userRepository) UpdateUser(userCtx model.UserContext, updates map[string]interface{}) error {
-	if len(updates) == 0 {
-		return errors.New("no fields to update")
-	}
-
-	err := r.db.Model(&model.User{}).
-		Where("firebase_id = ?", userCtx.FirebaseId).
-		Updates(updates).Error
-
+	err := r.db.Model(&model.User{}).Where("firebase_id = ?", userCtx.FirebaseId).Updates(updates).Error
 	return err
 }
 

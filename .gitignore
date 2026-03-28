@@ -6,6 +6,7 @@
 *.dylib
 bin/
 tmp/
+logs/
 
 # Environment
 .env
