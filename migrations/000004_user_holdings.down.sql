@@ -1,1 +1,1 @@
-DROP IF EXISTS users_holdings;
+DROP TABLE IF EXISTS users_holdings;
