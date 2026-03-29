@@ -19,7 +19,9 @@ type Config struct {
 	LogLevel     string
 	LogDir       string
 	InfoLogFile  string
-	ErrorLogFile string
+	ErrorLogFile  string
+	FinnhubAPIKey string
+	FinnhubWSURL  string
 }
 
 func Load() *Config {
@@ -36,7 +38,9 @@ func Load() *Config {
 		LogLevel:     getEnv("LOG_LEVEL", "debug"),
 		LogDir:       getEnv("LOG_DIR", "logs"),
 		InfoLogFile:  getEnv("INFO_LOG_FILE", "app.log"),
-		ErrorLogFile: getEnv("ERROR_LOG_FILE", "error.log"),
+		ErrorLogFile:  getEnv("ERROR_LOG_FILE", "error.log"),
+		FinnhubAPIKey: getEnv("FINNHUB_API_KEY", ""),
+		FinnhubWSURL:  getEnv("FINNHUB_WS_URL", "wss://ws.finnhub.io"),
 	}
 }
 
