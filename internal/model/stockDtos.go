@@ -27,3 +27,9 @@ type StockProfile struct {
 type QuotesRequest struct {
 	Symbols []string `json:"symbols" binding:"required"`
 }
+
+type StockListItem struct {
+	Symbol string  `json:"symbol"`
+	Name   string  `json:"name"`
+	Price  float64 `json:"price"`
+}
