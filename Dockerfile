@@ -10,14 +10,13 @@
 
   # Copy source
   COPY . .
-  COPY firebase.json .
   RUN CGO_ENABLED=0 go build -o server ./cmd/api
 
   # Run stage
   FROM alpine:3.21
   WORKDIR /app
   COPY --from=builder /app/server .
-  COPY firebase.json .
+  COPY --from=builder /app/firebase.json .
 
   EXPOSE 5000
   CMD ["./server"]
