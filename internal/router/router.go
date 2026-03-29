@@ -56,6 +56,7 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 		protected.PATCH("/user", userHandler.UpdateFields)
 		protected.DELETE("/user", userHandler.DeleteUserAccount)
 
+		protected.GET("/stocks", stockHandler.GetAllStocks)
 		protected.GET("/stocks/quote/:symbol", stockHandler.GetQuote)
 		protected.POST("/stocks/quotes", stockHandler.GetQuotes)
 		protected.GET("/stocks/search", stockHandler.SearchStocks)
