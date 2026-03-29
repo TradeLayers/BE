@@ -37,3 +37,14 @@ type SearchResult struct {
 	Description string `json:"description"`
 	Type        string `json:"type"`
 }
+
+type QuoteResponse struct {
+	CurrentPrice  float64 `json:"c"`
+	Change        float64 `json:"d"`
+	PercentChange float64 `json:"dp"`
+	High          float64 `json:"h"`
+	Low           float64 `json:"l"`
+	Open          float64 `json:"o"`
+	PrevClose     float64 `json:"pc"`
+	Timestamp     int64   `json:"t"`
+}

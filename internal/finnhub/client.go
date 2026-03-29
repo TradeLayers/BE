@@ -13,6 +13,7 @@ const baseURL = "https://finnhub.io/api/v1"
 type Client interface {
 	GetProfile(symbol string) (*ProfileResponse, error)
 	Search(query string) (*SearchResponse, error)
+	GetQuote(symbol string) (*QuoteResponse, error)
 }
 
 type finnhubClient struct {
@@ -44,6 +45,17 @@ func (c *finnhubClient) Search(query string) (*SearchResponse, error) {
 	endpoint := fmt.Sprintf("%s/search?q=%s", baseURL, url.QueryEscape(query))
 
 	var resp SearchResponse
+	if err := c.doGet(endpoint, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func (c *finnhubClient) GetQuote(symbol string) (*QuoteResponse, error) {
+	endpoint := fmt.Sprintf("%s/quote?symbol=%s", baseURL, url.QueryEscape(symbol))
+
+	var resp QuoteResponse
 	if err := c.doGet(endpoint, &resp); err != nil {
 		return nil, err
 	}
