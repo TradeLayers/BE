@@ -12,6 +12,9 @@ const (
 	ErrInternal
 	ErrNoAuthenticationHeader
 	ErrJwtExpired
+	ErrStockNotFound
+	ErrFinnhubUnavailable
+	ErrInvalidSymbol
 )
 
 type ErrorResponse struct {
@@ -26,6 +29,9 @@ var clientErrors = map[DomainError]ErrorResponse{
 	ErrInternal:                {500, "Something went wrong. Please try again later."},
 	ErrNoAuthenticationHeader:  {401, "Please sign in to continue."},
 	ErrJwtExpired:              {401, "Your session has expired. Please sign in again."},
+	ErrStockNotFound:           {404, "Stock not found."},
+	ErrFinnhubUnavailable:     {502, "Market data service is temporarily unavailable."},
+	ErrInvalidSymbol:           {400, "Invalid stock symbol."},
 }
 
 func ReturnError(c *gin.Context, domainErr DomainError) {
