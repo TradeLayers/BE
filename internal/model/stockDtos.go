@@ -22,6 +22,7 @@ type StockProfile struct {
 	Exchange  string  `json:"exchange"`
 	MarketCap float64 `json:"marketCap"`
 	WebURL    string  `json:"webUrl"`
+	Price     float64 `json:"price"`
 }
 
 type QuotesRequest struct {

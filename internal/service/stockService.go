@@ -59,17 +59,27 @@ func NewStockService(client finnhub.Client, priceMap *finnhub.PriceMap, repo rep
 	}
 }
 
+func (s *stockService) getPrice(symbol string) float64 {
+	if tp, ok := s.priceMap.Get(symbol); ok && tp.Price > 0 {
+		return tp.Price
+	}
+
+	quote, err := s.finnhubClient.GetQuote(symbol)
+	if err == nil && quote.CurrentPrice > 0 {
+		s.priceMap.Set(symbol, quote.CurrentPrice, 0, quote.Timestamp)
+		return quote.CurrentPrice
+	}
+
+	return 0
+}
+
 func (s *stockService) GetAllStocks() ([]model.StockListItem, appErrors.DomainError) {
 	items := make([]model.StockListItem, 0, len(DefaultStocks))
 	for symbol, name := range DefaultStocks {
-		price := 0.0
-		if tp, ok := s.priceMap.Get(symbol); ok {
-			price = tp.Price
-		}
 		items = append(items, model.StockListItem{
 			Symbol: symbol,
 			Name:   name,
-			Price:  price,
+			Price:  s.getPrice(symbol),
 		})
 	}
 	return items, appErrors.ErrNone
@@ -161,5 +171,6 @@ func (s *stockService) GetProfile(symbol string) (*model.StockProfile, appErrors
 		Exchange:  resp.Exchange,
 		MarketCap: resp.MarketCap,
 		WebURL:    resp.WebURL,
+		Price:     s.getPrice(symbol),
 	}, appErrors.ErrNone
 }
