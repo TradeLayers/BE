@@ -6,6 +6,7 @@ import (
 
 	"github.com/TradeLayers/BE/internal/config"
 	"github.com/TradeLayers/BE/internal/database"
+	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/logger"
 	"github.com/TradeLayers/BE/internal/router"
 	"github.com/TradeLayers/BE/internal/server"
@@ -37,7 +38,15 @@ func main() {
 	}
 	zapLogger.Info("database connected")
 
-	r := router.Setup(db, zapLogger, authClient)
+	priceMap := finnhub.NewPriceMap()
+	finnhubClient := finnhub.NewClient(cfg.FinnhubAPIKey)
+	wsClient := finnhub.NewWSClient(cfg.FinnhubAPIKey, cfg.FinnhubWSURL, priceMap, zapLogger)
+
+	ctx, cancelWS := context.WithCancel(context.Background())
+	defer cancelWS()
+	go wsClient.Run(ctx)
+
+	r := router.Setup(db, zapLogger, authClient, finnhubClient, priceMap, wsClient)
 
 	server.Run(cfg.AppPort, r, zapLogger)
 }
