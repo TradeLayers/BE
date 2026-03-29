@@ -10,6 +10,7 @@ import (
 	"github.com/TradeLayers/BE/internal/logger"
 	"github.com/TradeLayers/BE/internal/router"
 	"github.com/TradeLayers/BE/internal/server"
+	"github.com/TradeLayers/BE/internal/service"
 	"go.uber.org/zap"
 )
 
@@ -41,6 +42,8 @@ func main() {
 	priceMap := finnhub.NewPriceMap()
 	finnhubClient := finnhub.NewClient(cfg.FinnhubAPIKey)
 	wsClient := finnhub.NewWSClient(cfg.FinnhubAPIKey, cfg.FinnhubWSURL, priceMap, zapLogger)
+
+	wsClient.Subscribe(service.DefaultSymbols())
 
 	ctx, cancelWS := context.WithCancel(context.Background())
 	defer cancelWS()

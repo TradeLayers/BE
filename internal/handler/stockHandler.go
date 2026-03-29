@@ -17,6 +17,16 @@ func NewStockHandler(s service.StockService) *StockHandler {
 	return &StockHandler{service: s}
 }
 
+func (h *StockHandler) GetAllStocks(c *gin.Context) {
+	stocks, err := h.service.GetAllStocks()
+	if err != appErrors.ErrNone {
+		appErrors.ReturnError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, stocks)
+}
+
 func (h *StockHandler) GetQuote(c *gin.Context) {
 	symbol := c.Param("symbol")
 
