@@ -2,6 +2,7 @@ package finnhub
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,10 +11,16 @@ import (
 
 const baseURL = "https://finnhub.io/api/v1"
 
+// ErrNoData is returned by GetCandles when Finnhub responds with status
+// "no_data". Callers may choose to skip the symbol instead of failing the
+// whole batch.
+var ErrNoData = errors.New("finnhub: no candle data")
+
 type Client interface {
 	GetProfile(symbol string) (*ProfileResponse, error)
 	Search(query string) (*SearchResponse, error)
 	GetQuote(symbol string) (*QuoteResponse, error)
+	GetCandles(symbol, resolution string, from, to int64) (*CandleResponse, error)
 }
 
 type finnhubClient struct {
@@ -58,6 +65,28 @@ func (c *finnhubClient) GetQuote(symbol string) (*QuoteResponse, error) {
 	var resp QuoteResponse
 	if err := c.doGet(endpoint, &resp); err != nil {
 		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func (c *finnhubClient) GetCandles(symbol, resolution string, from, to int64) (*CandleResponse, error) {
+	endpoint := fmt.Sprintf(
+		"%s/stock/candle?symbol=%s&resolution=%s&from=%d&to=%d",
+		baseURL,
+		url.QueryEscape(symbol),
+		url.QueryEscape(resolution),
+		from,
+		to,
+	)
+
+	var resp CandleResponse
+	if err := c.doGet(endpoint, &resp); err != nil {
+		return nil, err
+	}
+
+	if resp.Status != "ok" {
+		return nil, ErrNoData
 	}
 
 	return &resp, nil
