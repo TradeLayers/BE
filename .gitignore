@@ -32,3 +32,4 @@ coverage.out
 
 # Go
 vendor/
+../logs/

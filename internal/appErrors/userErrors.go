@@ -16,6 +16,7 @@ const (
 	ErrFinnhubUnavailable
 	ErrInvalidSymbol
 	ErrInvalidQuantity
+	ErrInvalidThreshold
 	ErrInsufficientBalance
 	ErrInsufficientHoldings
 	ErrAlreadyWatched
@@ -39,6 +40,7 @@ var clientErrors = map[DomainError]ErrorResponse{
 	ErrFinnhubUnavailable:        {502, "Market data service is temporarily unavailable."},
 	ErrInvalidSymbol:             {400, "Invalid stock symbol."},
 	ErrInvalidQuantity:           {400, "Quantity must be greater than zero."},
+	ErrInvalidThreshold:          {400, "Threshold price must be greater than zero."},
 	ErrInsufficientBalance:       {400, "Insufficient balance for this purchase."},
 	ErrInsufficientHoldings:      {400, "You do not own enough shares to sell."},
 	ErrAlreadyWatched:            {409, "Stock is already in your watchlist."},

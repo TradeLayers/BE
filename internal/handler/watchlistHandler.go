@@ -58,3 +58,21 @@ func (h *WatchlistHandler) Remove(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+func (h *WatchlistHandler) UpdateThreshold(c *gin.Context) {
+	userCtx := getUserContext(c)
+
+	var req model.WatchlistThresholdRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		appErrors.ReturnError(c, appErrors.ErrInvalidThreshold)
+		return
+	}
+
+	item, domainErr := h.service.UpdateThreshold(*userCtx, c.Param("symbol"), req.ThresholdPrice)
+	if domainErr != appErrors.ErrNone {
+		appErrors.ReturnError(c, domainErr)
+		return
+	}
+
+	c.JSON(http.StatusOK, item)
+}
