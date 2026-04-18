@@ -52,6 +52,9 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 	watchlistRepo := repository.NewWatchlistRepository()
 	watchlistService := service.NewWatchlistService(db, stockRepo, watchlistRepo, finnhubClient, priceMap, wsClient)
 	watchlistHandler := handler.NewWatchlistHandler(watchlistService)
+	notificationRepo := repository.NewNotificationRepository()
+	notificationService := service.NewNotificationService(db, watchlistRepo, stockRepo, notificationRepo, finnhubClient, priceMap, wsClient)
+	notificationHandler := handler.NewNotificationHandler(notificationService)
 
 	api := r.Group("/api")
 	{
@@ -82,6 +85,9 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 		protected.POST("/watchlist", watchlistHandler.Add)
 		protected.DELETE("/watchlist/:symbol", watchlistHandler.Remove)
 		protected.PATCH("/watchlist/:symbol/threshold", watchlistHandler.UpdateThreshold)
+
+		protected.GET("/notifications/unread", notificationHandler.ListUnread)
+		protected.PATCH("/notifications/:id/read", notificationHandler.MarkRead)
 	}
 
 	return r

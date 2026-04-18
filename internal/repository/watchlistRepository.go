@@ -12,6 +12,7 @@ type WatchlistRepository interface {
 	Remove(db *gorm.DB, userID string, stockID uuid.UUID) (bool, error)
 	Exists(db *gorm.DB, userID string, stockID uuid.UUID) (bool, error)
 	UpdateThreshold(db *gorm.DB, userID string, stockID uuid.UUID, thresholdPrice float64) (bool, error)
+	UpdateThresholdReached(db *gorm.DB, userID string, stockID uuid.UUID, reached bool) (bool, error)
 }
 
 type watchlistRepository struct{}
@@ -50,7 +51,21 @@ func (r *watchlistRepository) Exists(db *gorm.DB, userID string, stockID uuid.UU
 func (r *watchlistRepository) UpdateThreshold(db *gorm.DB, userID string, stockID uuid.UUID, thresholdPrice float64) (bool, error) {
 	result := db.Model(&model.WatchlistEntry{}).
 		Where("user_id = ? AND stock_id = ?", userID, stockID).
-		Update("threshold_price", thresholdPrice)
+		Updates(map[string]interface{}{
+			"threshold_price":   thresholdPrice,
+			"threshold_reached": false,
+		})
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return result.RowsAffected > 0, nil
+}
+
+func (r *watchlistRepository) UpdateThresholdReached(db *gorm.DB, userID string, stockID uuid.UUID, reached bool) (bool, error) {
+	result := db.Model(&model.WatchlistEntry{}).
+		Where("user_id = ? AND stock_id = ?", userID, stockID).
+		Update("threshold_reached", reached)
 	if result.Error != nil {
 		return false, result.Error
 	}
