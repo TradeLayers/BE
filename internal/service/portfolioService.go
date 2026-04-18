@@ -337,18 +337,18 @@ func (s *portfolioService) GetHistory(userCtx model.UserContext, interval string
 		if err != nil {
 			return nil, appErrors.ErrInternal
 		}
-		for _, t := range earlier {
-			baseline = applyInvestmentDelta(baseline, t)
+		for i := range earlier {
+			baseline = applyInvestmentDelta(baseline, &earlier[i])
 		}
 	}
 
 	running := baseline
 	points := make([]model.PortfolioHistoryPoint, 0, len(txs))
-	for _, t := range txs {
-		running = applyInvestmentDelta(running, t)
+	for i := range txs {
+		running = applyInvestmentDelta(running, &txs[i])
 		investedF, _ := running.Float64()
 		points = append(points, model.PortfolioHistoryPoint{
-			Date:            t.TransactionDate,
+			Date:            txs[i].TransactionDate,
 			InvestedCapital: investedF,
 		})
 	}
@@ -406,7 +406,7 @@ func (s *portfolioService) stocksByID() (map[uuid.UUID]*model.Stock, error) {
 	return result, nil
 }
 
-func applyInvestmentDelta(running decimal.Decimal, t model.StockTransaction) decimal.Decimal {
+func applyInvestmentDelta(running decimal.Decimal, t *model.StockTransaction) decimal.Decimal {
 	amount := t.Price.Mul(t.Quantity)
 	if t.TransactionType == model.TransactionTypeSold {
 		return running.Sub(amount)

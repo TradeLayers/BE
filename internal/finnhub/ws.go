@@ -70,7 +70,10 @@ func (ws *WSClient) Subscribe(symbols []string) {
 func (ws *WSClient) connect() error {
 	url := fmt.Sprintf("%s?token=%s", ws.wsURL, ws.apiKey)
 
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(url, nil)
+	if resp != nil {
+		resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
