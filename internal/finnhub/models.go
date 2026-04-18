@@ -48,3 +48,30 @@ type QuoteResponse struct {
 	PrevClose     float64 `json:"pc"`
 	Timestamp     int64   `json:"t"`
 }
+
+type CandleResponse struct {
+	Close      []float64 `json:"c"`
+	High       []float64 `json:"h"`
+	Low        []float64 `json:"l"`
+	Open       []float64 `json:"o"`
+	Status     string    `json:"s"`
+	Timestamps []int64   `json:"t"`
+	Volume     []float64 `json:"v"`
+}
+
+type yahooChartResponse struct {
+	Chart struct {
+		Result []struct {
+			Timestamp  []int64 `json:"timestamp"`
+			Indicators struct {
+				Quote []struct {
+					Close  []float64 `json:"close"`
+					High   []float64 `json:"high"`
+					Low    []float64 `json:"low"`
+					Open   []float64 `json:"open"`
+					Volume []float64 `json:"volume"`
+				} `json:"quote"`
+			} `json:"indicators"`
+		} `json:"result"`
+	} `json:"chart"`
+}

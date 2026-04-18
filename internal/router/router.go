@@ -44,6 +44,15 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 	stockService := service.NewStockService(finnhubClient, priceMap, stockRepo, wsClient)
 	stockHandler := handler.NewStockHandler(stockService)
 
+	holdingsRepo := repository.NewHoldingsRepository()
+	transactionsRepo := repository.NewTransactionsRepository()
+	portfolioService := service.NewPortfolioService(db, stockRepo, holdingsRepo, transactionsRepo, finnhubClient, priceMap, wsClient)
+	portfolioHandler := handler.NewPortfolioHandler(portfolioService)
+
+	watchlistRepo := repository.NewWatchlistRepository()
+	watchlistService := service.NewWatchlistService(db, stockRepo, watchlistRepo, finnhubClient, priceMap, wsClient)
+	watchlistHandler := handler.NewWatchlistHandler(watchlistService)
+
 	api := r.Group("/api")
 	{
 		api.GET("/health", healthHanlder.Health)
@@ -61,6 +70,17 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 		protected.POST("/stocks/quotes", stockHandler.GetQuotes)
 		protected.GET("/stocks/search", stockHandler.SearchStocks)
 		protected.GET("/stocks/profile/:symbol", stockHandler.GetProfile)
+		protected.GET("/stocks/candles", stockHandler.GetCandles)
+
+		protected.GET("/portfolio/holdings", portfolioHandler.GetHoldings)
+		protected.GET("/portfolio/transactions", portfolioHandler.GetTransactions)
+		protected.GET("/portfolio/history", portfolioHandler.GetHistory)
+		protected.POST("/portfolio/buy", portfolioHandler.Buy)
+		protected.POST("/portfolio/sell", portfolioHandler.Sell)
+
+		protected.GET("/watchlist", watchlistHandler.List)
+		protected.POST("/watchlist", watchlistHandler.Add)
+		protected.DELETE("/watchlist/:symbol", watchlistHandler.Remove)
 	}
 
 	return r

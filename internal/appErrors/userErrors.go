@@ -15,6 +15,12 @@ const (
 	ErrStockNotFound
 	ErrFinnhubUnavailable
 	ErrInvalidSymbol
+	ErrInvalidQuantity
+	ErrInsufficientBalance
+	ErrInsufficientHoldings
+	ErrAlreadyWatched
+	ErrNotWatched
+	ErrHistoricalDataUnavailable
 )
 
 type ErrorResponse struct {
@@ -29,9 +35,15 @@ var clientErrors = map[DomainError]ErrorResponse{
 	ErrInternal:                {500, "Something went wrong. Please try again later."},
 	ErrNoAuthenticationHeader:  {401, "Please sign in to continue."},
 	ErrJwtExpired:              {401, "Your session has expired. Please sign in again."},
-	ErrStockNotFound:           {404, "Stock not found."},
-	ErrFinnhubUnavailable:     {502, "Market data service is temporarily unavailable."},
-	ErrInvalidSymbol:           {400, "Invalid stock symbol."},
+	ErrStockNotFound:             {404, "Stock not found."},
+	ErrFinnhubUnavailable:        {502, "Market data service is temporarily unavailable."},
+	ErrInvalidSymbol:             {400, "Invalid stock symbol."},
+	ErrInvalidQuantity:           {400, "Quantity must be greater than zero."},
+	ErrInsufficientBalance:       {400, "Insufficient balance for this purchase."},
+	ErrInsufficientHoldings:      {400, "You do not own enough shares to sell."},
+	ErrAlreadyWatched:            {409, "Stock is already in your watchlist."},
+	ErrNotWatched:                {404, "Stock is not in your watchlist."},
+	ErrHistoricalDataUnavailable: {503, "Historical market data is currently unavailable."},
 }
 
 func ReturnError(c *gin.Context, domainErr DomainError) {
