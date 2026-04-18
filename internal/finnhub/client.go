@@ -70,26 +70,83 @@ func (c *finnhubClient) GetQuote(symbol string) (*QuoteResponse, error) {
 	return &resp, nil
 }
 
+// GetCandles fetches historical OHLC data. Finnhub's free tier no longer
+// exposes /stock/candle (returns 403), so we source candles from Yahoo's
+// public chart API instead. The resolution param uses Finnhub notation and
+// is mapped to Yahoo's interval strings.
 func (c *finnhubClient) GetCandles(symbol, resolution string, from, to int64) (*CandleResponse, error) {
+	interval := yahooInterval(resolution)
 	endpoint := fmt.Sprintf(
-		"%s/stock/candle?symbol=%s&resolution=%s&from=%d&to=%d",
-		baseURL,
-		url.QueryEscape(symbol),
-		url.QueryEscape(resolution),
+		"https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=%s",
+		url.PathEscape(symbol),
 		from,
 		to,
+		interval,
 	)
 
-	var resp CandleResponse
-	if err := c.doGet(endpoint, &resp); err != nil {
-		return nil, err
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("yahoo request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("yahoo returned status %d", resp.StatusCode)
 	}
 
-	if resp.Status != "ok" {
+	var body yahooChartResponse
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, fmt.Errorf("decoding response: %w", err)
+	}
+
+	if len(body.Chart.Result) == 0 {
 		return nil, ErrNoData
 	}
 
-	return &resp, nil
+	result := body.Chart.Result[0]
+	if len(result.Indicators.Quote) == 0 || len(result.Timestamp) == 0 {
+		return nil, ErrNoData
+	}
+
+	quote := result.Indicators.Quote[0]
+	return &CandleResponse{
+		Status:     "ok",
+		Timestamps: result.Timestamp,
+		Close:      quote.Close,
+		High:       quote.High,
+		Low:        quote.Low,
+		Open:       quote.Open,
+		Volume:     quote.Volume,
+	}, nil
+}
+
+func yahooInterval(resolution string) string {
+	switch resolution {
+	case "1":
+		return "1m"
+	case "5":
+		return "5m"
+	case "15":
+		return "15m"
+	case "30":
+		return "30m"
+	case "60":
+		return "60m"
+	case "D", "":
+		return "1d"
+	case "W":
+		return "1wk"
+	case "M":
+		return "1mo"
+	default:
+		return "1d"
+	}
 }
 
 func (c *finnhubClient) doGet(endpoint string, result interface{}) error {
