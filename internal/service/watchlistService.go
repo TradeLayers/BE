@@ -12,6 +12,7 @@ type WatchlistService interface {
 	List(userCtx model.UserContext) ([]model.WatchlistItem, appErrors.DomainError)
 	Add(userCtx model.UserContext, symbol string) (*model.WatchlistItem, appErrors.DomainError)
 	Remove(userCtx model.UserContext, symbol string) appErrors.DomainError
+	UpdateThreshold(userCtx model.UserContext, symbol string, thresholdPrice float64) (*model.WatchlistItem, appErrors.DomainError)
 }
 
 type watchlistService struct {
@@ -66,9 +67,10 @@ func (s *watchlistService) List(userCtx model.UserContext) ([]model.WatchlistIte
 			continue
 		}
 		items = append(items, model.WatchlistItem{
-			Symbol:       stock.Symbol,
-			Name:         stock.StockName,
-			CurrentPrice: resolveCurrentPrice(s.priceMap, s.finnhubClient, stock.Symbol),
+			Symbol:         stock.Symbol,
+			Name:           stock.StockName,
+			CurrentPrice:   resolveCurrentPrice(s.priceMap, s.finnhubClient, stock.Symbol),
+			ThresholdPrice: e.ThresholdPrice,
 		})
 	}
 
@@ -101,9 +103,10 @@ func (s *watchlistService) Add(userCtx model.UserContext, symbolRaw string) (*mo
 	s.wsClient.Subscribe([]string{symbol})
 
 	return &model.WatchlistItem{
-		Symbol:       stock.Symbol,
-		Name:         stock.StockName,
-		CurrentPrice: resolveCurrentPrice(s.priceMap, s.finnhubClient, stock.Symbol),
+		Symbol:         stock.Symbol,
+		Name:           stock.StockName,
+		CurrentPrice:   resolveCurrentPrice(s.priceMap, s.finnhubClient, stock.Symbol),
+		ThresholdPrice: nil,
 	}, appErrors.ErrNone
 }
 
@@ -130,5 +133,40 @@ func (s *watchlistService) Remove(userCtx model.UserContext, symbolRaw string) a
 	}
 
 	return appErrors.ErrNone
+}
+
+func (s *watchlistService) UpdateThreshold(userCtx model.UserContext, symbolRaw string, thresholdPrice float64) (*model.WatchlistItem, appErrors.DomainError) {
+	if thresholdPrice <= 0 {
+		return nil, appErrors.ErrInvalidThreshold
+	}
+
+	symbol, domainErr := normalizeSymbol(symbolRaw)
+	if domainErr != appErrors.ErrNone {
+		return nil, domainErr
+	}
+
+	stock, err := s.stockRepo.GetBySymbol(symbol)
+	if err != nil {
+		return nil, appErrors.ErrInternal
+	}
+	if stock == nil {
+		return nil, appErrors.ErrNotWatched
+	}
+
+	updated, err := s.watchlistRepo.UpdateThreshold(s.db, userCtx.FirebaseId, stock.ID, thresholdPrice)
+	if err != nil {
+		return nil, appErrors.ErrInternal
+	}
+	if !updated {
+		return nil, appErrors.ErrNotWatched
+	}
+
+	threshold := thresholdPrice
+	return &model.WatchlistItem{
+		Symbol:         stock.Symbol,
+		Name:           stock.StockName,
+		CurrentPrice:   resolveCurrentPrice(s.priceMap, s.finnhubClient, stock.Symbol),
+		ThresholdPrice: &threshold,
+	}, appErrors.ErrNone
 }
 

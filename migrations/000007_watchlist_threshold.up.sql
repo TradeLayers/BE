@@ -1,0 +1,2 @@
+ALTER TABLE watchlist
+ADD COLUMN IF NOT EXISTS threshold_price DOUBLE PRECISION;

@@ -81,6 +81,7 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 		protected.GET("/watchlist", watchlistHandler.List)
 		protected.POST("/watchlist", watchlistHandler.Add)
 		protected.DELETE("/watchlist/:symbol", watchlistHandler.Remove)
+		protected.PATCH("/watchlist/:symbol/threshold", watchlistHandler.UpdateThreshold)
 	}
 
 	return r

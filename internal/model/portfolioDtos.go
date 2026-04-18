@@ -45,13 +45,18 @@ type PortfolioHistoryResponse struct {
 }
 
 type WatchlistItem struct {
-	Symbol       string  `json:"symbol"`
-	Name         string  `json:"name"`
-	CurrentPrice float64 `json:"currentPrice"`
+	Symbol         string   `json:"symbol"`
+	Name           string   `json:"name"`
+	CurrentPrice   float64  `json:"currentPrice"`
+	ThresholdPrice *float64 `json:"thresholdPrice"`
 }
 
 type WatchlistRequest struct {
 	Symbol string `json:"symbol" binding:"required"`
+}
+
+type WatchlistThresholdRequest struct {
+	ThresholdPrice float64 `json:"thresholdPrice" binding:"required"`
 }
 
 type CandleSeries struct {
