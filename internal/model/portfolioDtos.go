@@ -59,6 +59,15 @@ type WatchlistThresholdRequest struct {
 	ThresholdPrice float64 `json:"thresholdPrice" binding:"required"`
 }
 
+type ThresholdNotificationView struct {
+	ID             string    `json:"id"`
+	Symbol         string    `json:"symbol"`
+	ThresholdPrice float64   `json:"thresholdPrice"`
+	TriggerPrice   float64   `json:"triggerPrice"`
+	TriggeredAt    time.Time `json:"triggeredAt"`
+	Message        string    `json:"message"`
+}
+
 type CandleSeries struct {
 	Timestamps []int64   `json:"t"`
 	Close      []float64 `json:"c"`
