@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/TradeLayers/BE/internal/appErrors"
@@ -41,6 +42,7 @@ type StockService interface {
 	GetQuotes(symbols []string) ([]model.StockQuote, appErrors.DomainError)
 	SearchStocks(query string) ([]model.StockSearchResult, appErrors.DomainError)
 	GetProfile(symbol string) (*model.StockProfile, appErrors.DomainError)
+	GetCandles(symbols []string, resolution string, from, to int64) (*model.CandlesResponse, appErrors.DomainError)
 }
 
 type stockService struct {
@@ -60,17 +62,7 @@ func NewStockService(client finnhub.Client, priceMap *finnhub.PriceMap, repo rep
 }
 
 func (s *stockService) getPrice(symbol string) float64 {
-	if tp, ok := s.priceMap.Get(symbol); ok && tp.Price > 0 {
-		return tp.Price
-	}
-
-	quote, err := s.finnhubClient.GetQuote(symbol)
-	if err == nil && quote.CurrentPrice > 0 {
-		s.priceMap.Set(symbol, quote.CurrentPrice, 0, quote.Timestamp)
-		return quote.CurrentPrice
-	}
-
-	return 0
+	return resolveCurrentPrice(s.priceMap, s.finnhubClient, symbol)
 }
 
 func (s *stockService) GetAllStocks() ([]model.StockListItem, appErrors.DomainError) {
@@ -173,4 +165,47 @@ func (s *stockService) GetProfile(symbol string) (*model.StockProfile, appErrors
 		WebURL:    resp.WebURL,
 		Price:     s.getPrice(symbol),
 	}, appErrors.ErrNone
+}
+
+func (s *stockService) GetCandles(symbols []string, resolution string, from, to int64) (*model.CandlesResponse, appErrors.DomainError) {
+	if len(symbols) == 0 {
+		return nil, appErrors.ErrInvalidSymbol
+	}
+	if resolution == "" {
+		resolution = "D"
+	}
+
+	series := make(map[string]model.CandleSeries)
+	sawError := false
+	for _, raw := range symbols {
+		symbol := strings.ToUpper(strings.TrimSpace(raw))
+		if symbol == "" {
+			continue
+		}
+		resp, err := s.finnhubClient.GetCandles(symbol, resolution, from, to)
+		if err != nil {
+			if errors.Is(err, finnhub.ErrNoData) {
+				continue
+			}
+			sawError = true
+			continue
+		}
+		series[symbol] = model.CandleSeries{
+			Timestamps: resp.Timestamps,
+			Close:      resp.Close,
+			High:       resp.High,
+			Low:        resp.Low,
+			Open:       resp.Open,
+			Volume:     resp.Volume,
+		}
+	}
+
+	if len(series) == 0 {
+		if sawError {
+			return nil, appErrors.ErrHistoricalDataUnavailable
+		}
+		return nil, appErrors.ErrStockNotFound
+	}
+
+	return &model.CandlesResponse{Series: series}, appErrors.ErrNone
 }

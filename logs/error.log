@@ -1,3 +1,39 @@
+{"level":"error","timestamp":"2026-04-17T22:01:03.399Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:01:04.749Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:01:07.092Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:01:11.440Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:01:19.801Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:01:36.186Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:02:06.582Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:02:36.954Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:03:07.478Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:03:37.867Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:04:08.227Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:04:38.592Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:05:08.943Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:05:39.327Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:06:09.705Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:06:40.070Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:07:10.433Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:07:40.816Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:08:11.216Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:08:41.584Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:09:29.750Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:09:31.106Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:09:33.463Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:09:37.828Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:09:46.189Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:10:02.545Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:10:33.079Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:11:03.435Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:11:33.801Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:12:04.145Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:12:34.493Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:13:04.860Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-17T22:13:35.218Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
+{"level":"error","timestamp":"2026-04-18T15:51:09.294Z","caller":"finnhub/ws.go:146","msg":"finnhub ws read error","error":"websocket: close 1006 (abnormal closure): unexpected EOF"}
+{"level":"error","timestamp":"2026-04-18T16:54:29.027Z","caller":"finnhub/ws.go:146","msg":"finnhub ws read error","error":"websocket: close 1006 (abnormal closure): unexpected EOF"}
+
 {"level":"error","timestamp":"2026-03-30T10:26:20.474Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
 {"level":"error","timestamp":"2026-03-30T10:26:21.848Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}
 {"level":"error","timestamp":"2026-03-30T10:26:24.230Z","caller":"finnhub/ws.go:47","msg":"finnhub ws connect failed","error":"websocket: bad handshake"}

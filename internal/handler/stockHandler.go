@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/TradeLayers/BE/internal/appErrors"
 	"github.com/TradeLayers/BE/internal/model"
@@ -77,4 +79,45 @@ func (h *StockHandler) GetProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, profile)
+}
+
+func (h *StockHandler) GetCandles(c *gin.Context) {
+	symbolsParam := c.Query("symbols")
+	if symbolsParam == "" {
+		appErrors.ReturnError(c, appErrors.ErrInvalidSymbol)
+		return
+	}
+
+	symbols := splitSymbols(symbolsParam)
+	resolution := c.DefaultQuery("resolution", "D")
+
+	from, err := strconv.ParseInt(c.Query("from"), 10, 64)
+	if err != nil {
+		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
+		return
+	}
+	to, err := strconv.ParseInt(c.Query("to"), 10, 64)
+	if err != nil {
+		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
+		return
+	}
+
+	candles, domainErr := h.service.GetCandles(symbols, resolution, from, to)
+	if domainErr != appErrors.ErrNone {
+		appErrors.ReturnError(c, domainErr)
+		return
+	}
+
+	c.JSON(http.StatusOK, candles)
+}
+
+func splitSymbols(s string) []string {
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
 }
