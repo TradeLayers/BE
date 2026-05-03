@@ -67,7 +67,7 @@ func (s *alertService) List(userCtx model.UserContext) ([]model.AlertView, appEr
 		}
 
 		currentPrice := resolveCurrentPrice(s.priceMap, s.finnhubClient, stock.Symbol)
-		if alert.TriggeredAt == nil && alertCrossed(alert, currentPrice) {
+		if alert.TriggeredAt == nil && alertCrossed(&alert, currentPrice) {
 			updated, err := s.alertRepo.MarkTriggered(s.db, alert.ID)
 			if err != nil {
 				return nil, appErrors.ErrInternal
@@ -75,7 +75,7 @@ func (s *alertService) List(userCtx model.UserContext) ([]model.AlertView, appEr
 			alert = *updated
 		}
 
-		views = append(views, alertView(alert, stock, currentPrice))
+		views = append(views, alertView(&alert, stock, currentPrice))
 	}
 
 	return views, appErrors.ErrNone
@@ -113,7 +113,7 @@ func (s *alertService) Create(userCtx model.UserContext, req model.AlertRequest)
 	s.wsClient.Subscribe([]string{symbol})
 
 	currentPrice := resolveCurrentPrice(s.priceMap, s.finnhubClient, stock.Symbol)
-	return ptr(alertView(*alert, stock, currentPrice)), appErrors.ErrNone
+	return ptr(alertView(alert, stock, currentPrice)), appErrors.ErrNone
 }
 
 func (s *alertService) Delete(userCtx model.UserContext, id string) appErrors.DomainError {
@@ -133,7 +133,7 @@ func (s *alertService) Delete(userCtx model.UserContext, id string) appErrors.Do
 	return appErrors.ErrNone
 }
 
-func alertCrossed(alert model.Alert, currentPrice float64) bool {
+func alertCrossed(alert *model.Alert, currentPrice float64) bool {
 	if currentPrice <= 0 {
 		return false
 	}
@@ -148,7 +148,7 @@ func alertCrossed(alert model.Alert, currentPrice float64) bool {
 	}
 }
 
-func alertView(alert model.Alert, stock *model.Stock, currentPrice float64) model.AlertView {
+func alertView(alert *model.Alert, stock *model.Stock, currentPrice float64) model.AlertView {
 	threshold, _ := alert.ThresholdPrice.Float64()
 	return model.AlertView{
 		ID:             alert.ID,

@@ -439,7 +439,8 @@ func (s *portfolioService) marketValueHistory(txs []model.StockTransaction, from
 
 		total := decimal.Zero
 		for stockID, qty := range holdings {
-			closePrice := closeAtOrBefore(candlesByStock[stockID], tx.TransactionDate)
+			series := candlesByStock[stockID]
+			closePrice := closeAtOrBefore(&series, tx.TransactionDate)
 			if closePrice <= 0 {
 				continue
 			}
@@ -455,7 +456,7 @@ func (s *portfolioService) marketValueHistory(txs []model.StockTransaction, from
 	return points, nil
 }
 
-func closeAtOrBefore(series model.CandleSeries, at time.Time) float64 {
+func closeAtOrBefore(series *model.CandleSeries, at time.Time) float64 {
 	target := at.Unix()
 	for i := len(series.Timestamps) - 1; i >= 0; i-- {
 		if series.Timestamps[i] <= target && i < len(series.Close) {
