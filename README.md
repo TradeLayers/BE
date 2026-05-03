@@ -278,3 +278,14 @@ internal/
   service/        Business logic
 migrations/       SQL migrations
 ```
+## BDD scenarios
+
+Run the behavior-driven test suite with:
+
+```sh
+make bdd
+```
+
+Feature files live in `tests/features` and step definitions live in `tests/bdd`.
+To add a scenario, write the user-facing behavior in the relevant `.feature`
+file first, then add or reuse a matching step in `tests/bdd/bdd_test.go`.

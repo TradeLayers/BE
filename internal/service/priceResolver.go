@@ -4,6 +4,7 @@ import (
 	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
+	"github.com/google/uuid"
 )
 
 func resolveCurrentPrice(priceMap *finnhub.PriceMap, client finnhub.Client, symbol string) float64 {
@@ -47,4 +48,16 @@ func ensureStock(repo repository.StockRepository, client finnhub.Client, symbol 
 		return nil, err
 	}
 	return newStock, nil
+}
+
+func stocksByID(repo repository.StockRepository) (map[uuid.UUID]*model.Stock, error) {
+	all, err := repo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[uuid.UUID]*model.Stock, len(all))
+	for i := range all {
+		result[all[i].ID] = &all[i]
+	}
+	return result, nil
 }
