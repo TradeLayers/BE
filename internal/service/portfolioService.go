@@ -383,8 +383,14 @@ func (s *portfolioService) GetHistory(ctx context.Context, userCtx model.UserCon
 		return nil, appErrors.ErrInternal
 	}
 
+	marketValue, err := s.marketValueHistory(allTxs, from)
+	if err != nil {
+		return nil, appErrors.ErrInternal
+	}
+
 	return &model.PortfolioHistoryResponse{
 		Points:       points,
+		MarketValue:  marketValue,
 		CurrentValue: currentValue,
 	}, appErrors.ErrNone
 }

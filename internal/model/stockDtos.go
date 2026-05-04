@@ -1,10 +1,12 @@
 package model
 
 type StockQuote struct {
-	Symbol    string  `json:"symbol"`
-	Price     float64 `json:"price"`
-	Volume    float64 `json:"volume"`
-	Timestamp int64   `json:"timestamp"`
+	Symbol        string  `json:"symbol"`
+	Price         float64 `json:"price"`
+	Change        float64 `json:"change"`
+	PercentChange float64 `json:"percentChange"`
+	Volume        float64 `json:"volume"`
+	Timestamp     int64   `json:"timestamp"`
 }
 
 type StockSearchResult struct {

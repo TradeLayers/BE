@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/csv"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/TradeLayers/BE/internal/appErrors"
@@ -103,6 +106,40 @@ func (h *PortfolioHandler) GetTransactions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, txs)
+}
+
+func (h *PortfolioHandler) ExportTransactionsCSV(c *gin.Context) {
+	userCtx := getUserContext(c)
+
+	txs, err := h.service.GetTransactions(*userCtx, nil, nil, nil)
+	if err != appErrors.ErrNone {
+		appErrors.ReturnError(c, err)
+		return
+	}
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+	_ = writer.Write([]string{"date", "type", "symbol", "quantity", "price", "total"})
+	for _, tx := range txs {
+		total := tx.Price * tx.Quantity
+		_ = writer.Write([]string{
+			tx.TransactionDate.Format(time.RFC3339),
+			string(tx.TransactionType),
+			tx.Symbol,
+			strconv.FormatFloat(tx.Quantity, 'f', -1, 64),
+			strconv.FormatFloat(tx.Price, 'f', 2, 64),
+			strconv.FormatFloat(total, 'f', 2, 64),
+		})
+	}
+	writer.Flush()
+	if writer.Error() != nil {
+		appErrors.ReturnError(c, appErrors.ErrInternal)
+		return
+	}
+
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", `attachment; filename="transactions.csv"`)
+	c.String(http.StatusOK, buf.String())
 }
 
 func (h *PortfolioHandler) GetHistory(c *gin.Context) {

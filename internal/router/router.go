@@ -70,6 +70,10 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 	notificationService := service.NewNotificationService(db, watchlistRepo, stockRepo, notificationRepo, finnhubClient, priceMap, wsClient)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
 
+	alertRepo := repository.NewAlertRepository()
+	alertService := service.NewAlertService(db, stockRepo, alertRepo, finnhubClient, priceMap, wsClient)
+	alertHandler := handler.NewAlertHandler(alertService)
+
 	api := r.Group("/api")
 	{
 		api.GET("/health", healthHanlder.Health)
@@ -91,6 +95,7 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 
 		protected.GET("/portfolio/holdings", portfolioHandler.GetHoldings)
 		protected.GET("/portfolio/transactions", portfolioHandler.GetTransactions)
+		protected.GET("/portfolio/transactions.csv", portfolioHandler.ExportTransactionsCSV)
 		protected.GET("/portfolio/history", portfolioHandler.GetHistory)
 		protected.POST("/portfolio/buy", portfolioHandler.Buy)
 		protected.POST("/portfolio/sell", portfolioHandler.Sell)
@@ -102,6 +107,10 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 
 		protected.GET("/notifications/unread", notificationHandler.ListUnread)
 		protected.PATCH("/notifications/:id/read", notificationHandler.MarkRead)
+
+		protected.GET("/alerts", alertHandler.List)
+		protected.POST("/alerts", alertHandler.Create)
+		protected.DELETE("/alerts/:id", alertHandler.Delete)
 	}
 
 	return r
