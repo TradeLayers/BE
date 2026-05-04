@@ -39,9 +39,15 @@ type PortfolioHistoryPoint struct {
 	InvestedCapital float64   `json:"investedCapital"`
 }
 
+type PortfolioMarketValuePoint struct {
+	Date  time.Time `json:"date"`
+	Value float64   `json:"value"`
+}
+
 type PortfolioHistoryResponse struct {
-	Points       []PortfolioHistoryPoint `json:"points"`
-	CurrentValue float64                 `json:"currentValue"`
+	Points       []PortfolioHistoryPoint     `json:"points"`
+	MarketValue  []PortfolioMarketValuePoint `json:"marketValue"`
+	CurrentValue float64                     `json:"currentValue"`
 }
 
 type WatchlistItem struct {
@@ -66,6 +72,23 @@ type ThresholdNotificationView struct {
 	TriggerPrice   float64   `json:"triggerPrice"`
 	TriggeredAt    time.Time `json:"triggeredAt"`
 	Message        string    `json:"message"`
+}
+
+type AlertRequest struct {
+	Symbol         string         `json:"symbol" binding:"required"`
+	ThresholdPrice float64        `json:"thresholdPrice" binding:"required"`
+	Direction      AlertDirection `json:"direction" binding:"required"`
+}
+
+type AlertView struct {
+	ID             uuid.UUID      `json:"id"`
+	Symbol         string         `json:"symbol"`
+	Name           string         `json:"name"`
+	ThresholdPrice float64        `json:"thresholdPrice"`
+	Direction      AlertDirection `json:"direction"`
+	CurrentPrice   float64        `json:"currentPrice"`
+	TriggeredAt    *time.Time     `json:"triggeredAt"`
+	CreatedAt      time.Time      `json:"createdAt"`
 }
 
 type CandleSeries struct {
