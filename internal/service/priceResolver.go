@@ -52,8 +52,8 @@ func ensureStock(ctx context.Context, repo repository.StockRepository, client fi
 	return newStock, nil
 }
 
-func stocksByID(repo repository.StockRepository) (map[uuid.UUID]*model.Stock, error) {
-	all, err := repo.GetAll()
+func stocksByID(ctx context.Context, repo repository.StockRepository) (map[uuid.UUID]*model.Stock, error) {
+	all, err := repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}

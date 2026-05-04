@@ -111,7 +111,7 @@ func (h *PortfolioHandler) GetTransactions(c *gin.Context) {
 func (h *PortfolioHandler) ExportTransactionsCSV(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	txs, err := h.service.GetTransactions(*userCtx, nil, nil, nil)
+	txs, err := h.service.GetTransactions(c.Request.Context(), *userCtx, nil, nil, nil)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return

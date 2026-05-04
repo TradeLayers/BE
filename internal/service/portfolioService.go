@@ -346,6 +346,24 @@ func (s *portfolioService) GetHistory(ctx context.Context, userCtx model.UserCon
 
 	from := intervalStart(interval)
 
+	allTxs, err := s.txRepo.ListByUser(ctx, s.db, userCtx.FirebaseId, nil, nil, nil)
+	if err != nil {
+		log.Error("failed to load all portfolio history transactions", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
+		return nil, appErrors.ErrInternal
+	}
+	if len(allTxs) == 0 {
+		currentValue, err := s.currentPortfolioValue(ctx, userCtx.FirebaseId)
+		if err != nil {
+			log.Error("failed to calculate current portfolio value", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
+			return nil, appErrors.ErrInternal
+		}
+		return &model.PortfolioHistoryResponse{
+			Points:       []model.PortfolioHistoryPoint{},
+			MarketValue:  []model.PortfolioMarketValuePoint{},
+			CurrentValue: currentValue,
+		}, appErrors.ErrNone
+	}
+
 	txs, err := s.txRepo.ListByUser(ctx, s.db, userCtx.FirebaseId, nil, from, nil)
 	if err != nil {
 		log.Error("failed to load portfolio history transactions", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
@@ -383,8 +401,9 @@ func (s *portfolioService) GetHistory(ctx context.Context, userCtx model.UserCon
 		return nil, appErrors.ErrInternal
 	}
 
-	marketValue, err := s.marketValueHistory(allTxs, from)
+	marketValue, err := s.marketValueHistory(ctx, allTxs, from)
 	if err != nil {
+		log.Error("failed to calculate market value history", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -393,6 +412,90 @@ func (s *portfolioService) GetHistory(ctx context.Context, userCtx model.UserCon
 		MarketValue:  marketValue,
 		CurrentValue: currentValue,
 	}, appErrors.ErrNone
+}
+
+func (s *portfolioService) marketValueHistory(ctx context.Context, txs []model.StockTransaction, from *time.Time) ([]model.PortfolioMarketValuePoint, error) {
+	if len(txs) == 0 {
+		return []model.PortfolioMarketValuePoint{}, nil
+	}
+
+	stocksByID, err := s.stocksByID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	start := txs[0].TransactionDate
+	if from != nil && from.Before(start) {
+		start = *from
+	}
+	to := time.Now()
+
+	candlesByStock := make(map[uuid.UUID]model.CandleSeries)
+	for _, tx := range txs {
+		if _, ok := candlesByStock[tx.StockID]; ok {
+			continue
+		}
+		stock := stocksByID[tx.StockID]
+		if stock == nil {
+			continue
+		}
+		resp, err := s.finnhubClient.GetCandles(stock.Symbol, "D", start.Unix(), to.Unix())
+		if err != nil {
+			continue
+		}
+		candlesByStock[tx.StockID] = model.CandleSeries{
+			Timestamps: resp.Timestamps,
+			Close:      resp.Close,
+			High:       resp.High,
+			Low:        resp.Low,
+			Open:       resp.Open,
+			Volume:     resp.Volume,
+		}
+	}
+
+	holdings := make(map[uuid.UUID]decimal.Decimal)
+	points := make([]model.PortfolioMarketValuePoint, 0, len(txs))
+	for _, tx := range txs {
+		if tx.TransactionType == model.TransactionTypeSold {
+			holdings[tx.StockID] = holdings[tx.StockID].Sub(tx.Quantity)
+			if !holdings[tx.StockID].GreaterThan(decimal.Zero) {
+				delete(holdings, tx.StockID)
+			}
+		} else {
+			holdings[tx.StockID] = holdings[tx.StockID].Add(tx.Quantity)
+		}
+
+		if from != nil && tx.TransactionDate.Before(*from) {
+			continue
+		}
+
+		total := decimal.Zero
+		for stockID, qty := range holdings {
+			series := candlesByStock[stockID]
+			closePrice := closeAtOrBefore(&series, tx.TransactionDate)
+			if closePrice <= 0 {
+				continue
+			}
+			total = total.Add(qty.Mul(decimal.NewFromFloat(closePrice)))
+		}
+		value, _ := total.Float64()
+		points = append(points, model.PortfolioMarketValuePoint{
+			Date:  tx.TransactionDate,
+			Value: value,
+		})
+	}
+
+	return points, nil
+}
+
+func closeAtOrBefore(series *model.CandleSeries, at time.Time) float64 {
+	target := at.Unix()
+	for i := len(series.Timestamps) - 1; i >= 0; i-- {
+		if series.Timestamps[i] <= target && i < len(series.Close) {
+			return series.Close[i]
+		}
+	}
+	return 0
 }
 
 func (s *portfolioService) currentPortfolioValue(ctx context.Context, userID string) (float64, error) {
