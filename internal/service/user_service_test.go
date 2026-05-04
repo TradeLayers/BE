@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -22,6 +23,7 @@ func setupUserService() (*repository.MockUserRepository, UserService) {
 func teardownUserService() {}
 
 func TestCreateOrFetchUser(t *testing.T) {
+	ctx := context.Background()
 	userCtx := model.UserContext{
 		FirebaseId: "firebase-123",
 		Email:      "test@example.com",
@@ -45,7 +47,7 @@ func TestCreateOrFetchUser(t *testing.T) {
 		{
 			name: "user already exists - returns fetched user",
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.GetUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return expectedUser, nil
 				}
 			},
@@ -56,10 +58,10 @@ func TestCreateOrFetchUser(t *testing.T) {
 		{
 			name: "user not found - creates new user",
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.GetUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return nil, nil
 				}
-				mock.CreateUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.CreateUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return expectedUser, nil
 				}
 			},
@@ -70,7 +72,7 @@ func TestCreateOrFetchUser(t *testing.T) {
 		{
 			name: "GetUser fails - returns error",
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.GetUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return nil, errors.New("database connection error")
 				}
 			},
@@ -81,10 +83,10 @@ func TestCreateOrFetchUser(t *testing.T) {
 		{
 			name: "CreateUser fails - returns error",
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.GetUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return nil, nil
 				}
-				mock.CreateUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.CreateUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return nil, errors.New("failed to create user")
 				}
 			},
@@ -101,7 +103,7 @@ func TestCreateOrFetchUser(t *testing.T) {
 
 			tt.setupMock(mock)
 
-			user, status, err := svc.CreateOrFetchUser(userCtx)
+			user, status, err := svc.CreateOrFetchUser(ctx, userCtx)
 
 			if tt.expectError && err == appErrors.ErrNone {
 				t.Fatal("expected error but got none")
@@ -120,6 +122,7 @@ func TestCreateOrFetchUser(t *testing.T) {
 }
 
 func TestUpdateFields(t *testing.T) {
+	ctx := context.Background()
 	userCtx := model.UserContext{
 		FirebaseId: "firebase-123",
 		Email:      "test@example.com",
@@ -141,10 +144,10 @@ func TestUpdateFields(t *testing.T) {
 			name:   "updates both email and name",
 			fields: model.UpdateFieldsDto{Email: &newEmail, Name: &newName},
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
+				mock.UpdateUserFn = func(_ context.Context, ctx model.UserContext, updates map[string]interface{}) error {
 					return nil
 				}
-				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.GetUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return &model.User{FirebaseId: "firebase-123", Email: newEmail, Name: newName}, nil
 				}
 			},
@@ -155,10 +158,10 @@ func TestUpdateFields(t *testing.T) {
 			name:   "updates only email when name is nil",
 			fields: model.UpdateFieldsDto{Email: &newEmail, Name: nil},
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
+				mock.UpdateUserFn = func(_ context.Context, ctx model.UserContext, updates map[string]interface{}) error {
 					return nil
 				}
-				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.GetUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return &model.User{FirebaseId: "firebase-123", Email: newEmail}, nil
 				}
 			},
@@ -169,7 +172,7 @@ func TestUpdateFields(t *testing.T) {
 			name:   "whitespace-only fields are skipped",
 			fields: model.UpdateFieldsDto{Email: &whitespace, Name: &whitespace},
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
+				mock.UpdateUserFn = func(_ context.Context, ctx model.UserContext, updates map[string]interface{}) error {
 					return errors.New("no fields to update")
 				}
 			},
@@ -180,7 +183,7 @@ func TestUpdateFields(t *testing.T) {
 			name:   "UpdateUser fails - returns error",
 			fields: model.UpdateFieldsDto{Email: &newEmail, Name: &newName},
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
+				mock.UpdateUserFn = func(_ context.Context, ctx model.UserContext, updates map[string]interface{}) error {
 					return errors.New("database error")
 				}
 			},
@@ -191,10 +194,10 @@ func TestUpdateFields(t *testing.T) {
 			name:   "UpdateUser succeeds but GetUser fails",
 			fields: model.UpdateFieldsDto{Email: &newEmail},
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
+				mock.UpdateUserFn = func(_ context.Context, ctx model.UserContext, updates map[string]interface{}) error {
 					return nil
 				}
-				mock.GetUserFn = func(ctx model.UserContext) (*model.User, error) {
+				mock.GetUserFn = func(_ context.Context, ctx model.UserContext) (*model.User, error) {
 					return nil, errors.New("database error")
 				}
 			},
@@ -214,13 +217,13 @@ func TestUpdateFields(t *testing.T) {
 			var capturedUpdates map[string]interface{}
 			if mock.UpdateUserFn != nil {
 				original := mock.UpdateUserFn
-				mock.UpdateUserFn = func(ctx model.UserContext, updates map[string]interface{}) error {
+				mock.UpdateUserFn = func(callCtx context.Context, ctx model.UserContext, updates map[string]interface{}) error {
 					capturedUpdates = updates
-					return original(ctx, updates)
+					return original(callCtx, ctx, updates)
 				}
 			}
 
-			user, err := svc.UpdateFields(userCtx, tt.fields)
+			user, err := svc.UpdateFields(ctx, userCtx, tt.fields)
 
 			if tt.expectError && err == appErrors.ErrNone {
 				t.Fatal("expected error but got none")
@@ -242,6 +245,7 @@ func TestUpdateFields(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	ctx := context.Background()
 	userCtx := model.UserContext{
 		FirebaseId: "firebase-123",
 		Email:      "test@example.com",
@@ -256,7 +260,7 @@ func TestDeleteUser(t *testing.T) {
 		{
 			name: "delete succeeds",
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.DeleteUserFn = func(ctx model.UserContext) error {
+				mock.DeleteUserFn = func(_ context.Context, ctx model.UserContext) error {
 					return nil
 				}
 			},
@@ -265,7 +269,7 @@ func TestDeleteUser(t *testing.T) {
 		{
 			name: "delete fails - returns error",
 			setupMock: func(mock *repository.MockUserRepository) {
-				mock.DeleteUserFn = func(ctx model.UserContext) error {
+				mock.DeleteUserFn = func(_ context.Context, ctx model.UserContext) error {
 					return errors.New("user not found")
 				}
 			},
@@ -280,7 +284,7 @@ func TestDeleteUser(t *testing.T) {
 
 			tt.setupMock(mock)
 
-			err := svc.DeleteUser(userCtx)
+			err := svc.DeleteUser(ctx, userCtx)
 
 			if tt.expectError && err == appErrors.ErrNone {
 				t.Fatal("expected error but got none")

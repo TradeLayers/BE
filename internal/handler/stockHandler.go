@@ -9,6 +9,7 @@ import (
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/service"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type StockHandler struct {
@@ -20,7 +21,7 @@ func NewStockHandler(s service.StockService) *StockHandler {
 }
 
 func (h *StockHandler) GetAllStocks(c *gin.Context) {
-	stocks, err := h.service.GetAllStocks()
+	stocks, err := h.service.GetAllStocks(c.Request.Context())
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -32,7 +33,7 @@ func (h *StockHandler) GetAllStocks(c *gin.Context) {
 func (h *StockHandler) GetQuote(c *gin.Context) {
 	symbol := c.Param("symbol")
 
-	quote, err := h.service.GetQuote(symbol)
+	quote, err := h.service.GetQuote(c.Request.Context(), symbol)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -42,13 +43,16 @@ func (h *StockHandler) GetQuote(c *gin.Context) {
 }
 
 func (h *StockHandler) GetQuotes(c *gin.Context) {
+	log := requestLogger(c)
+
 	var req model.QuotesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Warn("failed to bind stock quotes request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidSymbol)
 		return
 	}
 
-	quotes, err := h.service.GetQuotes(req.Symbols)
+	quotes, err := h.service.GetQuotes(c.Request.Context(), req.Symbols)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -60,7 +64,7 @@ func (h *StockHandler) GetQuotes(c *gin.Context) {
 func (h *StockHandler) SearchStocks(c *gin.Context) {
 	query := c.Query("q")
 
-	results, err := h.service.SearchStocks(query)
+	results, err := h.service.SearchStocks(c.Request.Context(), query)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -72,7 +76,7 @@ func (h *StockHandler) SearchStocks(c *gin.Context) {
 func (h *StockHandler) GetProfile(c *gin.Context) {
 	symbol := c.Param("symbol")
 
-	profile, err := h.service.GetProfile(symbol)
+	profile, err := h.service.GetProfile(c.Request.Context(), symbol)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -82,8 +86,10 @@ func (h *StockHandler) GetProfile(c *gin.Context) {
 }
 
 func (h *StockHandler) GetCandles(c *gin.Context) {
+	log := requestLogger(c)
 	symbolsParam := c.Query("symbols")
 	if symbolsParam == "" {
+		log.Warn("missing symbols query parameter")
 		appErrors.ReturnError(c, appErrors.ErrInvalidSymbol)
 		return
 	}
@@ -93,16 +99,18 @@ func (h *StockHandler) GetCandles(c *gin.Context) {
 
 	from, err := strconv.ParseInt(c.Query("from"), 10, 64)
 	if err != nil {
+		log.Warn("invalid candles from query parameter", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return
 	}
 	to, err := strconv.ParseInt(c.Query("to"), 10, 64)
 	if err != nil {
+		log.Warn("invalid candles to query parameter", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return
 	}
 
-	candles, domainErr := h.service.GetCandles(symbols, resolution, from, to)
+	candles, domainErr := h.service.GetCandles(c.Request.Context(), symbols, resolution, from, to)
 	if domainErr != appErrors.ErrNone {
 		appErrors.ReturnError(c, domainErr)
 		return

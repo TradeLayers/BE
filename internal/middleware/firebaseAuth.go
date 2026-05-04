@@ -6,7 +6,9 @@ import (
 
 	"firebase.google.com/go/auth"
 	"github.com/TradeLayers/BE/internal/appErrors"
+	"github.com/TradeLayers/BE/internal/requestlog"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	"github.com/TradeLayers/BE/internal/model"
 )
@@ -17,9 +19,11 @@ type TokenVerifier interface {
 
 func FirebaseAuth(authClient TokenVerifier) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log := requestlog.FromContext(c.Request.Context())
 
 		header := c.GetHeader("Authorization")
 		if header == "" {
+			log.Warn("missing authorization header")
 			appErrors.ReturnError(c, appErrors.ErrNoAuthenticationHeader)
 			return
 		}
@@ -27,6 +31,7 @@ func FirebaseAuth(authClient TokenVerifier) gin.HandlerFunc {
 		tokenString := strings.TrimPrefix(header, "Bearer ")
 		token, err := authClient.VerifyIDToken(c.Request.Context(), tokenString)
 		if err != nil {
+			log.Warn("failed to verify id token", zap.Error(err))
 			appErrors.ReturnError(c, appErrors.ErrJwtExpired)
 			return
 		}

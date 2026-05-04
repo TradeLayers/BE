@@ -8,6 +8,7 @@ import (
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/service"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type PortfolioHandler struct {
@@ -20,14 +21,17 @@ func NewPortfolioHandler(s service.PortfolioService) *PortfolioHandler {
 
 func (h *PortfolioHandler) Buy(c *gin.Context) {
 	userCtx := getUserContext(c)
+	ctx := c.Request.Context()
+	log := requestLogger(c)
 
 	var req model.TradeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Warn("failed to bind buy request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return
 	}
 
-	result, err := h.service.Buy(*userCtx, req.Symbol, req.Quantity)
+	result, err := h.service.Buy(ctx, *userCtx, req.Symbol, req.Quantity)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -38,14 +42,17 @@ func (h *PortfolioHandler) Buy(c *gin.Context) {
 
 func (h *PortfolioHandler) Sell(c *gin.Context) {
 	userCtx := getUserContext(c)
+	ctx := c.Request.Context()
+	log := requestLogger(c)
 
 	var req model.TradeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Warn("failed to bind sell request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return
 	}
 
-	result, err := h.service.Sell(*userCtx, req.Symbol, req.Quantity)
+	result, err := h.service.Sell(ctx, *userCtx, req.Symbol, req.Quantity)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -57,7 +64,7 @@ func (h *PortfolioHandler) Sell(c *gin.Context) {
 func (h *PortfolioHandler) GetHoldings(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	holdings, err := h.service.GetHoldings(*userCtx)
+	holdings, err := h.service.GetHoldings(c.Request.Context(), *userCtx)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -68,6 +75,8 @@ func (h *PortfolioHandler) GetHoldings(c *gin.Context) {
 
 func (h *PortfolioHandler) GetTransactions(c *gin.Context) {
 	userCtx := getUserContext(c)
+	ctx := c.Request.Context()
+	log := requestLogger(c)
 
 	var symbolFilter *string
 	if s := c.Query("stock"); s != "" {
@@ -76,16 +85,18 @@ func (h *PortfolioHandler) GetTransactions(c *gin.Context) {
 
 	from, fromErr := parseOptionalTime(c.Query("from"))
 	if fromErr != nil {
+		log.Warn("invalid transactions from query parameter", zap.Error(fromErr))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return
 	}
 	to, toErr := parseOptionalTime(c.Query("to"))
 	if toErr != nil {
+		log.Warn("invalid transactions to query parameter", zap.Error(toErr))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return
 	}
 
-	txs, err := h.service.GetTransactions(*userCtx, symbolFilter, from, to)
+	txs, err := h.service.GetTransactions(ctx, *userCtx, symbolFilter, from, to)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -97,7 +108,7 @@ func (h *PortfolioHandler) GetTransactions(c *gin.Context) {
 func (h *PortfolioHandler) GetHistory(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	history, err := h.service.GetHistory(*userCtx, c.Query("interval"))
+	history, err := h.service.GetHistory(c.Request.Context(), *userCtx, c.Query("interval"))
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return

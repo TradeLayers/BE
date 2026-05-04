@@ -242,7 +242,7 @@ These commands run `docker-compose` from the Utilities repo. Under the hood:
 
 Once running:
 - Backend: http://localhost:5000
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:3001
 
 ## Make Commands
 

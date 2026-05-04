@@ -7,6 +7,7 @@ import (
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/service"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type UserHandler struct {
@@ -26,8 +27,9 @@ func getUserContext(c *gin.Context) *model.UserContext {
 
 func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
 	userCtx := getUserContext(c)
+	ctx := c.Request.Context()
 
-	user, state, err := h.service.CreateOrFetchUser(*userCtx)
+	user, state, err := h.service.CreateOrFetchUser(ctx, *userCtx)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -43,14 +45,17 @@ func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
 
 func (h *UserHandler) UpdateFields(c *gin.Context) {
 	userCtx := getUserContext(c)
+	ctx := c.Request.Context()
+	log := requestLogger(c)
 
 	var updatedFields model.UpdateFieldsDto
 	if err := c.ShouldBindJSON(&updatedFields); err != nil {
+		log.Warn("failed to bind user update request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return
 	}
 
-	user, err := h.service.UpdateFields(*userCtx, updatedFields)
+	user, err := h.service.UpdateFields(ctx, *userCtx, updatedFields)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -61,8 +66,9 @@ func (h *UserHandler) UpdateFields(c *gin.Context) {
 
 func (h *UserHandler) DeleteUserAccount(c *gin.Context) {
 	userCtx := getUserContext(c)
+	ctx := c.Request.Context()
 
-	err := h.service.DeleteUser(*userCtx)
+	err := h.service.DeleteUser(ctx, *userCtx)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return

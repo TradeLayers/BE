@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -9,18 +10,20 @@ import (
 	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
+	"github.com/TradeLayers/BE/internal/requestlog"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type PortfolioService interface {
-	Buy(userCtx model.UserContext, symbol string, qty float64) (*model.TradeResult, appErrors.DomainError)
-	Sell(userCtx model.UserContext, symbol string, qty float64) (*model.TradeResult, appErrors.DomainError)
-	GetHoldings(userCtx model.UserContext) ([]model.HoldingView, appErrors.DomainError)
-	GetTransactions(userCtx model.UserContext, symbol *string, from, to *time.Time) ([]model.TransactionView, appErrors.DomainError)
-	GetHistory(userCtx model.UserContext, interval string) (*model.PortfolioHistoryResponse, appErrors.DomainError)
+	Buy(ctx context.Context, userCtx model.UserContext, symbol string, qty float64) (*model.TradeResult, appErrors.DomainError)
+	Sell(ctx context.Context, userCtx model.UserContext, symbol string, qty float64) (*model.TradeResult, appErrors.DomainError)
+	GetHoldings(ctx context.Context, userCtx model.UserContext) ([]model.HoldingView, appErrors.DomainError)
+	GetTransactions(ctx context.Context, userCtx model.UserContext, symbol *string, from, to *time.Time) ([]model.TransactionView, appErrors.DomainError)
+	GetHistory(ctx context.Context, userCtx model.UserContext, interval string) (*model.PortfolioHistoryResponse, appErrors.DomainError)
 }
 
 type portfolioService struct {
@@ -57,7 +60,9 @@ func NewPortfolioService(
 	}
 }
 
-func (s *portfolioService) Buy(userCtx model.UserContext, symbolRaw string, qtyF float64) (*model.TradeResult, appErrors.DomainError) {
+func (s *portfolioService) Buy(ctx context.Context, userCtx model.UserContext, symbolRaw string, qtyF float64) (*model.TradeResult, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
 	symbol, domainErr := normalizeSymbol(symbolRaw)
 	if domainErr != appErrors.ErrNone {
 		return nil, domainErr
@@ -68,8 +73,9 @@ func (s *portfolioService) Buy(userCtx model.UserContext, symbolRaw string, qtyF
 
 	qty := decimal.NewFromFloat(qtyF)
 
-	stock, err := ensureStock(s.stockRepo, s.finnhubClient, symbol)
+	stock, err := ensureStock(ctx, s.stockRepo, s.finnhubClient, symbol)
 	if err != nil {
+		log.Error("failed to ensure stock for buy", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -86,7 +92,7 @@ func (s *portfolioService) Buy(userCtx model.UserContext, symbolRaw string, qtyF
 	var newBalance decimal.Decimal
 	domainFailure := appErrors.ErrNone
 
-	txErr := s.db.Transaction(func(txdb *gorm.DB) error {
+	txErr := s.db.WithContext(ctx).Transaction(func(txdb *gorm.DB) error {
 		var user model.User
 		if err := txdb.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("firebase_id = ?", userCtx.FirebaseId).
@@ -103,7 +109,7 @@ func (s *portfolioService) Buy(userCtx model.UserContext, symbolRaw string, qtyF
 			return errDomainRollback
 		}
 
-		if err := s.holdingsRepo.Upsert(txdb, userCtx.FirebaseId, stock.ID, qty); err != nil {
+		if err := s.holdingsRepo.Upsert(ctx, txdb, userCtx.FirebaseId, stock.ID, qty); err != nil {
 			return err
 		}
 
@@ -114,7 +120,7 @@ func (s *portfolioService) Buy(userCtx model.UserContext, symbolRaw string, qtyF
 			Quantity:        qty,
 			TransactionType: model.TransactionTypeBought,
 		}
-		if err := s.txRepo.Create(txdb, txn); err != nil {
+		if err := s.txRepo.Create(ctx, txdb, txn); err != nil {
 			return err
 		}
 
@@ -134,13 +140,16 @@ func (s *portfolioService) Buy(userCtx model.UserContext, symbolRaw string, qtyF
 		return nil, domainFailure
 	}
 	if txErr != nil {
+		log.Error("buy transaction failed", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(txErr))
 		return nil, appErrors.ErrInternal
 	}
 
 	return buildTradeResult(resultTx, stock, priceF, qtyF, newBalance), appErrors.ErrNone
 }
 
-func (s *portfolioService) Sell(userCtx model.UserContext, symbolRaw string, qtyF float64) (*model.TradeResult, appErrors.DomainError) {
+func (s *portfolioService) Sell(ctx context.Context, userCtx model.UserContext, symbolRaw string, qtyF float64) (*model.TradeResult, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
 	symbol, domainErr := normalizeSymbol(symbolRaw)
 	if domainErr != appErrors.ErrNone {
 		return nil, domainErr
@@ -151,8 +160,9 @@ func (s *portfolioService) Sell(userCtx model.UserContext, symbolRaw string, qty
 
 	qty := decimal.NewFromFloat(qtyF)
 
-	stock, err := s.stockRepo.GetBySymbol(symbol)
+	stock, err := s.stockRepo.GetBySymbol(ctx, symbol)
 	if err != nil {
+		log.Error("failed to fetch stock for sell", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 	if stock == nil {
@@ -170,7 +180,7 @@ func (s *portfolioService) Sell(userCtx model.UserContext, symbolRaw string, qty
 	var newBalance decimal.Decimal
 	domainFailure := appErrors.ErrNone
 
-	txErr := s.db.Transaction(func(txdb *gorm.DB) error {
+	txErr := s.db.WithContext(ctx).Transaction(func(txdb *gorm.DB) error {
 		var user model.User
 		if err := txdb.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("firebase_id = ?", userCtx.FirebaseId).
@@ -182,7 +192,7 @@ func (s *portfolioService) Sell(userCtx model.UserContext, symbolRaw string, qty
 			return err
 		}
 
-		holding, err := s.holdingsRepo.GetOne(txdb, userCtx.FirebaseId, stock.ID)
+		holding, err := s.holdingsRepo.GetOne(ctx, txdb, userCtx.FirebaseId, stock.ID)
 		if err != nil {
 			return err
 		}
@@ -193,11 +203,11 @@ func (s *portfolioService) Sell(userCtx model.UserContext, symbolRaw string, qty
 
 		remaining := holding.Quantity.Sub(qty)
 		if remaining.IsZero() {
-			if err := s.holdingsRepo.Delete(txdb, userCtx.FirebaseId, stock.ID); err != nil {
+			if err := s.holdingsRepo.Delete(ctx, txdb, userCtx.FirebaseId, stock.ID); err != nil {
 				return err
 			}
 		} else {
-			if err := s.holdingsRepo.SetQuantity(txdb, userCtx.FirebaseId, stock.ID, remaining); err != nil {
+			if err := s.holdingsRepo.SetQuantity(ctx, txdb, userCtx.FirebaseId, stock.ID, remaining); err != nil {
 				return err
 			}
 		}
@@ -209,7 +219,7 @@ func (s *portfolioService) Sell(userCtx model.UserContext, symbolRaw string, qty
 			Quantity:        qty,
 			TransactionType: model.TransactionTypeSold,
 		}
-		if err := s.txRepo.Create(txdb, txn); err != nil {
+		if err := s.txRepo.Create(ctx, txdb, txn); err != nil {
 			return err
 		}
 
@@ -229,15 +239,19 @@ func (s *portfolioService) Sell(userCtx model.UserContext, symbolRaw string, qty
 		return nil, domainFailure
 	}
 	if txErr != nil {
+		log.Error("sell transaction failed", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(txErr))
 		return nil, appErrors.ErrInternal
 	}
 
 	return buildTradeResult(resultTx, stock, priceF, qtyF, newBalance), appErrors.ErrNone
 }
 
-func (s *portfolioService) GetHoldings(userCtx model.UserContext) ([]model.HoldingView, appErrors.DomainError) {
-	holdings, err := s.holdingsRepo.GetByUser(s.db, userCtx.FirebaseId)
+func (s *portfolioService) GetHoldings(ctx context.Context, userCtx model.UserContext) ([]model.HoldingView, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
+	holdings, err := s.holdingsRepo.GetByUser(ctx, s.db, userCtx.FirebaseId)
 	if err != nil {
+		log.Error("failed to load holdings", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -245,8 +259,9 @@ func (s *portfolioService) GetHoldings(userCtx model.UserContext) ([]model.Holdi
 		return []model.HoldingView{}, appErrors.ErrNone
 	}
 
-	stocksByID, err := s.stocksByID()
+	stocksByID, err := s.stocksByID(ctx)
 	if err != nil {
+		log.Error("failed to map stocks for holdings", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -269,15 +284,18 @@ func (s *portfolioService) GetHoldings(userCtx model.UserContext) ([]model.Holdi
 	return views, appErrors.ErrNone
 }
 
-func (s *portfolioService) GetTransactions(userCtx model.UserContext, symbolFilter *string, from, to *time.Time) ([]model.TransactionView, appErrors.DomainError) {
+func (s *portfolioService) GetTransactions(ctx context.Context, userCtx model.UserContext, symbolFilter *string, from, to *time.Time) ([]model.TransactionView, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
 	var stockIDFilter *uuid.UUID
 	if symbolFilter != nil {
 		sym, domainErr := normalizeSymbol(*symbolFilter)
 		if domainErr != appErrors.ErrNone {
 			return nil, domainErr
 		}
-		stock, err := s.stockRepo.GetBySymbol(sym)
+		stock, err := s.stockRepo.GetBySymbol(ctx, sym)
 		if err != nil {
+			log.Error("failed to fetch stock for transaction filter", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", sym), zap.Error(err))
 			return nil, appErrors.ErrInternal
 		}
 		if stock == nil {
@@ -286,16 +304,18 @@ func (s *portfolioService) GetTransactions(userCtx model.UserContext, symbolFilt
 		stockIDFilter = &stock.ID
 	}
 
-	txs, err := s.txRepo.ListByUser(s.db, userCtx.FirebaseId, stockIDFilter, from, to)
+	txs, err := s.txRepo.ListByUser(ctx, s.db, userCtx.FirebaseId, stockIDFilter, from, to)
 	if err != nil {
+		log.Error("failed to load transactions", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 	if len(txs) == 0 {
 		return []model.TransactionView{}, appErrors.ErrNone
 	}
 
-	stocksByID, err := s.stocksByID()
+	stocksByID, err := s.stocksByID(ctx)
 	if err != nil {
+		log.Error("failed to map stocks for transactions", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -321,11 +341,14 @@ func (s *portfolioService) GetTransactions(userCtx model.UserContext, symbolFilt
 	return views, appErrors.ErrNone
 }
 
-func (s *portfolioService) GetHistory(userCtx model.UserContext, interval string) (*model.PortfolioHistoryResponse, appErrors.DomainError) {
+func (s *portfolioService) GetHistory(ctx context.Context, userCtx model.UserContext, interval string) (*model.PortfolioHistoryResponse, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
 	from := intervalStart(interval)
 
-	txs, err := s.txRepo.ListByUser(s.db, userCtx.FirebaseId, nil, from, nil)
+	txs, err := s.txRepo.ListByUser(ctx, s.db, userCtx.FirebaseId, nil, from, nil)
 	if err != nil {
+		log.Error("failed to load portfolio history transactions", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -333,8 +356,9 @@ func (s *portfolioService) GetHistory(userCtx model.UserContext, interval string
 	// the start of the range, so pull everything before "from" and fold it in.
 	var baseline decimal.Decimal
 	if from != nil {
-		earlier, err := s.txRepo.ListByUser(s.db, userCtx.FirebaseId, nil, nil, from)
+		earlier, err := s.txRepo.ListByUser(ctx, s.db, userCtx.FirebaseId, nil, nil, from)
 		if err != nil {
+			log.Error("failed to load baseline portfolio transactions", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 			return nil, appErrors.ErrInternal
 		}
 		for i := range earlier {
@@ -353,8 +377,9 @@ func (s *portfolioService) GetHistory(userCtx model.UserContext, interval string
 		})
 	}
 
-	currentValue, err := s.currentPortfolioValue(userCtx.FirebaseId)
+	currentValue, err := s.currentPortfolioValue(ctx, userCtx.FirebaseId)
 	if err != nil {
+		log.Error("failed to calculate current portfolio value", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -364,8 +389,8 @@ func (s *portfolioService) GetHistory(userCtx model.UserContext, interval string
 	}, appErrors.ErrNone
 }
 
-func (s *portfolioService) currentPortfolioValue(userID string) (float64, error) {
-	holdings, err := s.holdingsRepo.GetByUser(s.db, userID)
+func (s *portfolioService) currentPortfolioValue(ctx context.Context, userID string) (float64, error) {
+	holdings, err := s.holdingsRepo.GetByUser(ctx, s.db, userID)
 	if err != nil {
 		return 0, err
 	}
@@ -373,7 +398,7 @@ func (s *portfolioService) currentPortfolioValue(userID string) (float64, error)
 		return 0, nil
 	}
 
-	stocksByID, err := s.stocksByID()
+	stocksByID, err := s.stocksByID(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -394,8 +419,8 @@ func (s *portfolioService) currentPortfolioValue(userID string) (float64, error)
 	return totalF, nil
 }
 
-func (s *portfolioService) stocksByID() (map[uuid.UUID]*model.Stock, error) {
-	all, err := s.stockRepo.GetAll()
+func (s *portfolioService) stocksByID(ctx context.Context) (map[uuid.UUID]*model.Stock, error) {
+	all, err := s.stockRepo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}

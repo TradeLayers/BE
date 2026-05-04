@@ -1,21 +1,24 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/TradeLayers/BE/internal/appErrors"
 	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
+	"github.com/TradeLayers/BE/internal/requestlog"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 const unreadNotificationsLimit = 50
 
 type NotificationService interface {
-	ListUnread(userCtx model.UserContext) ([]model.ThresholdNotificationView, appErrors.DomainError)
-	MarkRead(userCtx model.UserContext, notificationID string) appErrors.DomainError
+	ListUnread(ctx context.Context, userCtx model.UserContext) ([]model.ThresholdNotificationView, appErrors.DomainError)
+	MarkRead(ctx context.Context, userCtx model.UserContext, notificationID string) appErrors.DomainError
 }
 
 type notificationService struct {
@@ -48,13 +51,17 @@ func NewNotificationService(
 	}
 }
 
-func (s *notificationService) ListUnread(userCtx model.UserContext) ([]model.ThresholdNotificationView, appErrors.DomainError) {
-	if err := s.evaluateThresholdCrossings(userCtx.FirebaseId); err != nil {
+func (s *notificationService) ListUnread(ctx context.Context, userCtx model.UserContext) ([]model.ThresholdNotificationView, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
+	if err := s.evaluateThresholdCrossings(ctx, userCtx.FirebaseId); err != nil {
+		log.Error("failed to evaluate notification thresholds", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
-	notifications, err := s.notificationRepo.ListUnreadByUser(s.db, userCtx.FirebaseId, unreadNotificationsLimit)
+	notifications, err := s.notificationRepo.ListUnreadByUser(ctx, s.db, userCtx.FirebaseId, unreadNotificationsLimit)
 	if err != nil {
+		log.Error("failed to list unread notifications", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -78,22 +85,23 @@ func (s *notificationService) ListUnread(userCtx model.UserContext) ([]model.Thr
 	return views, appErrors.ErrNone
 }
 
-func (s *notificationService) MarkRead(userCtx model.UserContext, notificationID string) appErrors.DomainError {
+func (s *notificationService) MarkRead(ctx context.Context, userCtx model.UserContext, notificationID string) appErrors.DomainError {
 	id, err := uuid.Parse(notificationID)
 	if err != nil {
 		return appErrors.ErrInvalidFieldInformation
 	}
 
-	_, err = s.notificationRepo.MarkReadByUser(s.db, userCtx.FirebaseId, id)
+	_, err = s.notificationRepo.MarkReadByUser(ctx, s.db, userCtx.FirebaseId, id)
 	if err != nil {
+		requestlog.FromContext(ctx).Error("failed to mark notification as read", zap.String("firebase_id", userCtx.FirebaseId), zap.String("notification_id", notificationID), zap.Error(err))
 		return appErrors.ErrInternal
 	}
 
 	return appErrors.ErrNone
 }
 
-func (s *notificationService) evaluateThresholdCrossings(userID string) error {
-	entries, err := s.watchlistRepo.ListByUser(s.db, userID)
+func (s *notificationService) evaluateThresholdCrossings(ctx context.Context, userID string) error {
+	entries, err := s.watchlistRepo.ListByUser(ctx, s.db, userID)
 	if err != nil {
 		return err
 	}
@@ -101,7 +109,7 @@ func (s *notificationService) evaluateThresholdCrossings(userID string) error {
 		return nil
 	}
 
-	stocks, err := s.stockRepo.GetAll()
+	stocks, err := s.stockRepo.GetAll(ctx)
 	if err != nil {
 		return err
 	}
@@ -133,17 +141,17 @@ func (s *notificationService) evaluateThresholdCrossings(userID string) error {
 				ThresholdPrice: *entry.ThresholdPrice,
 				TriggerPrice:   currentPrice,
 			}
-			if err := s.notificationRepo.Create(s.db, notification); err != nil {
+			if err := s.notificationRepo.Create(ctx, s.db, notification); err != nil {
 				return err
 			}
-			if _, err := s.watchlistRepo.UpdateThresholdReached(s.db, userID, entry.StockID, true); err != nil {
+			if _, err := s.watchlistRepo.UpdateThresholdReached(ctx, s.db, userID, entry.StockID, true); err != nil {
 				return err
 			}
 			continue
 		}
 
 		if !isReached && entry.ThresholdReached {
-			if _, err := s.watchlistRepo.UpdateThresholdReached(s.db, userID, entry.StockID, false); err != nil {
+			if _, err := s.watchlistRepo.UpdateThresholdReached(ctx, s.db, userID, entry.StockID, false); err != nil {
 				return err
 			}
 		}

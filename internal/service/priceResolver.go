@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
@@ -24,8 +26,8 @@ func resolveCurrentPrice(priceMap *finnhub.PriceMap, client finnhub.Client, symb
 // catalogue name, then a Finnhub profile lookup, then the symbol itself as a
 // last resort. Trading and watchlist features both need this because the
 // stocks table is only populated on demand.
-func ensureStock(repo repository.StockRepository, client finnhub.Client, symbol string) (*model.Stock, error) {
-	stock, err := repo.GetBySymbol(symbol)
+func ensureStock(ctx context.Context, repo repository.StockRepository, client finnhub.Client, symbol string) (*model.Stock, error) {
+	stock, err := repo.GetBySymbol(ctx, symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +45,7 @@ func ensureStock(repo repository.StockRepository, client finnhub.Client, symbol 
 	}
 
 	newStock := &model.Stock{StockName: name, Symbol: symbol}
-	if err := repo.Create(newStock); err != nil {
+	if err := repo.Create(ctx, newStock); err != nil {
 		return nil, err
 	}
 	return newStock, nil
