@@ -27,7 +27,7 @@ func (h *PortfolioHandler) Buy(c *gin.Context) {
 	ctx := c.Request.Context()
 	log := requestLogger(c)
 
-	var req model.TradeRequest
+	var req model.TradeRequest = model.TradeRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Warn("failed to bind buy request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
@@ -48,7 +48,7 @@ func (h *PortfolioHandler) Sell(c *gin.Context) {
 	ctx := c.Request.Context()
 	log := requestLogger(c)
 
-	var req model.TradeRequest
+	var req model.TradeRequest = model.TradeRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Warn("failed to bind sell request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
@@ -81,7 +81,7 @@ func (h *PortfolioHandler) GetTransactions(c *gin.Context) {
 	ctx := c.Request.Context()
 	log := requestLogger(c)
 
-	var symbolFilter *string
+	var symbolFilter *string = nil
 	if s := c.Query("stock"); s != "" {
 		symbolFilter = &s
 	}
@@ -117,7 +117,7 @@ func (h *PortfolioHandler) ExportTransactionsCSV(c *gin.Context) {
 		return
 	}
 
-	var buf bytes.Buffer
+	var buf bytes.Buffer = bytes.Buffer{}
 	writer := csv.NewWriter(&buf)
 	_ = writer.Write([]string{"date", "type", "symbol", "quantity", "price", "total"})
 	for _, tx := range txs {

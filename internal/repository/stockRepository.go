@@ -23,7 +23,7 @@ func NewStockRepository(db *gorm.DB) StockRepository {
 }
 
 func (r *stockRepository) GetBySymbol(ctx context.Context, symbol string) (*model.Stock, error) {
-	var stock model.Stock
+	var stock model.Stock = model.Stock{}
 
 	err := withContext(ctx, r.db).Where("symbol = ?", symbol).First(&stock).Error
 
@@ -37,7 +37,7 @@ func (r *stockRepository) GetBySymbol(ctx context.Context, symbol string) (*mode
 }
 
 func (r *stockRepository) GetAll(ctx context.Context) ([]model.Stock, error) {
-	var stocks []model.Stock
+	var stocks []model.Stock = nil
 
 	err := withContext(ctx, r.db).Find(&stocks).Error
 	if err != nil {

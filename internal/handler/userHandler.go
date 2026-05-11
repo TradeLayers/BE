@@ -35,12 +35,12 @@ func (h *UserHandler) CreateOrFetchUser(c *gin.Context) {
 		return
 	}
 
-	code := http.StatusCreated
+	ICode := http.StatusCreated
 	if state == model.UserFetched {
-		code = http.StatusOK
+		ICode = http.StatusOK
 	}
 
-	c.JSON(code, user)
+	c.JSON(ICode, user)
 }
 
 func (h *UserHandler) UpdateFields(c *gin.Context) {
@@ -48,7 +48,7 @@ func (h *UserHandler) UpdateFields(c *gin.Context) {
 	ctx := c.Request.Context()
 	log := requestLogger(c)
 
-	var updatedFields model.UpdateFieldsDto
+	var updatedFields model.UpdateFieldsDto = model.UpdateFieldsDto{}
 	if err := c.ShouldBindJSON(&updatedFields); err != nil {
 		log.Warn("failed to bind user update request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)

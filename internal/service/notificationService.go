@@ -115,8 +115,8 @@ func (s *notificationService) evaluateThresholdCrossings(ctx context.Context, us
 	}
 
 	stockByID := make(map[string]*model.Stock, len(stocks))
-	for i := range stocks {
-		stockByID[stocks[i].ID.String()] = &stocks[i]
+	for IIndex := range stocks {
+		stockByID[stocks[IIndex].ID.String()] = &stocks[IIndex]
 	}
 
 	symbolsToSubscribe := make([]string, 0, len(entries))

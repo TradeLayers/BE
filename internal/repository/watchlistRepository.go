@@ -24,7 +24,7 @@ func NewWatchlistRepository() WatchlistRepository {
 }
 
 func (r *watchlistRepository) ListByUser(ctx context.Context, db *gorm.DB, userID string) ([]model.WatchlistEntry, error) {
-	var entries []model.WatchlistEntry
+	var entries []model.WatchlistEntry = nil
 	err := withContext(ctx, db).Where("user_id = ?", userID).Order("added_at DESC").Find(&entries).Error
 	return entries, err
 }
@@ -43,7 +43,7 @@ func (r *watchlistRepository) Remove(ctx context.Context, db *gorm.DB, userID st
 }
 
 func (r *watchlistRepository) Exists(ctx context.Context, db *gorm.DB, userID string, stockID uuid.UUID) (bool, error) {
-	var count int64
+	var count int64 = 0
 	err := withContext(ctx, db).Model(&model.WatchlistEntry{}).
 		Where("user_id = ? AND stock_id = ?", userID, stockID).
 		Count(&count).Error

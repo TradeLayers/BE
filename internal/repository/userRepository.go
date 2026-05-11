@@ -24,7 +24,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (r *userRepository) GetUser(ctx context.Context, userCtx model.UserContext) (*model.User, error) {
-	var user model.User
+	var user model.User = model.User{}
 
 	err := withContext(ctx, r.db).Where("firebase_id = ?", userCtx.FirebaseId).First(&user).Error
 

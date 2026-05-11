@@ -18,8 +18,8 @@ func TestHTTPMiddlewareAddsRequestIDToResponseAndLogs(t *testing.T) {
 	core, observed := observer.New(zap.InfoLevel)
 	baseLog := zap.New(core)
 
-	var ginRequestID string
-	var contextRequestID string
+	var ginRequestID string = ""
+	var contextRequestID string = ""
 
 	router := gin.New()
 	router.Use(HTTPMiddleware(baseLog))
@@ -80,17 +80,17 @@ func TestHTTPMiddlewareGeneratesUniqueRequestIDsForParallelRequests(t *testing.T
 	const requestCount = 12
 
 	headers := make([]string, requestCount)
-	var wg sync.WaitGroup
-	for i := 0; i < requestCount; i++ {
+	var wg sync.WaitGroup = sync.WaitGroup{}
+	for IIndex := 0; IIndex < requestCount; IIndex++ {
 		wg.Add(1)
-		go func(idx int) {
+		go func(IIndex int) {
 			defer wg.Done()
 
 			req := httptest.NewRequest(http.MethodGet, "/test", nil)
 			recorder := httptest.NewRecorder()
 			router.ServeHTTP(recorder, req)
-			headers[idx] = recorder.Header().Get(RequestIDHeader)
-		}(i)
+			headers[IIndex] = recorder.Header().Get(RequestIDHeader)
+		}(IIndex)
 	}
 	wg.Wait()
 

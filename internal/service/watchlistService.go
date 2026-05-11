@@ -64,8 +64,8 @@ func (s *watchlistService) List(ctx context.Context, userCtx model.UserContext) 
 		return nil, appErrors.ErrInternal
 	}
 	byID := make(map[string]*model.Stock, len(stocks))
-	for i := range stocks {
-		byID[stocks[i].ID.String()] = &stocks[i]
+	for IIndex := range stocks {
+		byID[stocks[IIndex].ID.String()] = &stocks[IIndex]
 	}
 
 	items := make([]model.WatchlistItem, 0, len(entries))

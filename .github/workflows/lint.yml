@@ -27,3 +27,6 @@ jobs:
         with:
           version: v2.11
           args: --timeout=5m
+
+      - name: Run project lint rules
+        run: go run ./cmd/projectlint ./...

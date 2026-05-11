@@ -25,7 +25,7 @@ func (r *transactionsRepository) Create(ctx context.Context, db *gorm.DB, tx *mo
 }
 
 func (r *transactionsRepository) ListByUser(ctx context.Context, db *gorm.DB, userID string, stockID *uuid.UUID, from, to *time.Time) ([]model.StockTransaction, error) {
-	var txs []model.StockTransaction
+	var txs []model.StockTransaction = nil
 	q := withContext(ctx, db).Where("user_id = ?", userID)
 	if stockID != nil {
 		q = q.Where("stock_id = ?", *stockID)

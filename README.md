@@ -152,7 +152,9 @@ choco install golang-migrate
 cp .env.example .env
 ```
 
-Edit `.env` if you need to change the database user, password, or port.
+Edit `.env` if you need to change the database user, password, port, or external API keys.
+For donations, set `STRIPE_SECRET_KEY` from the Stripe Dashboard. Keep it only in the backend
+environment.
 
 ### 6. Create the database user and database
 

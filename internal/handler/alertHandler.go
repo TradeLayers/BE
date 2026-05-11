@@ -32,7 +32,7 @@ func (h *AlertHandler) List(c *gin.Context) {
 func (h *AlertHandler) Create(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	var req model.AlertRequest
+	var req model.AlertRequest = model.AlertRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return

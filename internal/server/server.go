@@ -17,7 +17,7 @@ func Run(port string, handler http.Handler, logger *zap.Logger) {
 		Addr:              fmt.Sprintf(":%s", port),
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
-	}	
+	}
 
 	go func() {
 		logger.Info("server starting", zap.String("port", port))

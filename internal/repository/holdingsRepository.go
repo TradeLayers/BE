@@ -25,13 +25,13 @@ func NewHoldingsRepository() HoldingsRepository {
 }
 
 func (r *holdingsRepository) GetByUser(ctx context.Context, db *gorm.DB, userID string) ([]model.UserHoldings, error) {
-	var holdings []model.UserHoldings
+	var holdings []model.UserHoldings = nil
 	err := withContext(ctx, db).Where("user_id = ?", userID).Find(&holdings).Error
 	return holdings, err
 }
 
 func (r *holdingsRepository) GetOne(ctx context.Context, db *gorm.DB, userID string, stockID uuid.UUID) (*model.UserHoldings, error) {
-	var h model.UserHoldings
+	var h model.UserHoldings = model.UserHoldings{}
 	err := withContext(ctx, db).Where("user_id = ? AND stock_id = ?", userID, stockID).First(&h).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil

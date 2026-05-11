@@ -35,7 +35,7 @@ func (h *WatchlistHandler) Add(c *gin.Context) {
 	ctx := c.Request.Context()
 	log := requestLogger(c)
 
-	var req model.WatchlistRequest
+	var req model.WatchlistRequest = model.WatchlistRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Warn("failed to bind watchlist add request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidSymbol)
@@ -68,7 +68,7 @@ func (h *WatchlistHandler) UpdateThreshold(c *gin.Context) {
 	ctx := c.Request.Context()
 	log := requestLogger(c)
 
-	var req model.WatchlistThresholdRequest
+	var req model.WatchlistThresholdRequest = model.WatchlistThresholdRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Warn("failed to bind watchlist threshold request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidThreshold)

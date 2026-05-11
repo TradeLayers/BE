@@ -38,7 +38,7 @@ type portfolioService struct {
 
 // errDomainRollback aborts the GORM transaction so the caller-captured
 // appErrors.DomainError can be returned to the client.
-var errDomainRollback = errors.New("domain rollback")
+var errDomainRollback error = errors.New("domain rollback")
 
 func NewPortfolioService(
 	db *gorm.DB,
@@ -88,12 +88,12 @@ func (s *portfolioService) Buy(ctx context.Context, userCtx model.UserContext, s
 
 	s.wsClient.Subscribe([]string{symbol})
 
-	var resultTx *model.StockTransaction
-	var newBalance decimal.Decimal
+	var resultTx *model.StockTransaction = nil
+	var newBalance decimal.Decimal = decimal.Decimal{}
 	domainFailure := appErrors.ErrNone
 
 	txErr := s.db.WithContext(ctx).Transaction(func(txdb *gorm.DB) error {
-		var user model.User
+		var user model.User = model.User{}
 		if err := txdb.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("firebase_id = ?", userCtx.FirebaseId).
 			First(&user).Error; err != nil {
@@ -176,12 +176,12 @@ func (s *portfolioService) Sell(ctx context.Context, userCtx model.UserContext, 
 	price := decimal.NewFromFloat(priceF)
 	proceeds := price.Mul(qty)
 
-	var resultTx *model.StockTransaction
-	var newBalance decimal.Decimal
+	var resultTx *model.StockTransaction = nil
+	var newBalance decimal.Decimal = decimal.Decimal{}
 	domainFailure := appErrors.ErrNone
 
 	txErr := s.db.WithContext(ctx).Transaction(func(txdb *gorm.DB) error {
-		var user model.User
+		var user model.User = model.User{}
 		if err := txdb.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("firebase_id = ?", userCtx.FirebaseId).
 			First(&user).Error; err != nil {
@@ -287,7 +287,7 @@ func (s *portfolioService) GetHoldings(ctx context.Context, userCtx model.UserCo
 func (s *portfolioService) GetTransactions(ctx context.Context, userCtx model.UserContext, symbolFilter *string, from, to *time.Time) ([]model.TransactionView, appErrors.DomainError) {
 	log := requestlog.FromContext(ctx)
 
-	var stockIDFilter *uuid.UUID
+	var stockIDFilter *uuid.UUID = nil
 	if symbolFilter != nil {
 		sym, domainErr := normalizeSymbol(*symbolFilter)
 		if domainErr != appErrors.ErrNone {
@@ -372,25 +372,25 @@ func (s *portfolioService) GetHistory(ctx context.Context, userCtx model.UserCon
 
 	// For cumulative math we must start from the user's baseline invested at
 	// the start of the range, so pull everything before "from" and fold it in.
-	var baseline decimal.Decimal
+	var baseline decimal.Decimal = decimal.Decimal{}
 	if from != nil {
 		earlier, err := s.txRepo.ListByUser(ctx, s.db, userCtx.FirebaseId, nil, nil, from)
 		if err != nil {
 			log.Error("failed to load baseline portfolio transactions", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 			return nil, appErrors.ErrInternal
 		}
-		for i := range earlier {
-			baseline = applyInvestmentDelta(baseline, &earlier[i])
+		for IIndex := range earlier {
+			baseline = applyInvestmentDelta(baseline, &earlier[IIndex])
 		}
 	}
 
 	running := baseline
 	points := make([]model.PortfolioHistoryPoint, 0, len(txs))
-	for i := range txs {
-		running = applyInvestmentDelta(running, &txs[i])
+	for IIndex := range txs {
+		running = applyInvestmentDelta(running, &txs[IIndex])
 		investedF, _ := running.Float64()
 		points = append(points, model.PortfolioHistoryPoint{
-			Date:            txs[i].TransactionDate,
+			Date:            txs[IIndex].TransactionDate,
 			InvestedCapital: investedF,
 		})
 	}
@@ -490,9 +490,9 @@ func (s *portfolioService) marketValueHistory(ctx context.Context, txs []model.S
 
 func closeAtOrBefore(series *model.CandleSeries, at time.Time) float64 {
 	target := at.Unix()
-	for i := len(series.Timestamps) - 1; i >= 0; i-- {
-		if series.Timestamps[i] <= target && i < len(series.Close) {
-			return series.Close[i]
+	for IIndex := len(series.Timestamps) - 1; IIndex >= 0; IIndex-- {
+		if series.Timestamps[IIndex] <= target && IIndex < len(series.Close) {
+			return series.Close[IIndex]
 		}
 	}
 	return 0
@@ -534,8 +534,8 @@ func (s *portfolioService) stocksByID(ctx context.Context) (map[uuid.UUID]*model
 		return nil, err
 	}
 	result := make(map[uuid.UUID]*model.Stock, len(all))
-	for i := range all {
-		result[all[i].ID] = &all[i]
+	for IIndex := range all {
+		result[all[IIndex].ID] = &all[IIndex]
 	}
 	return result, nil
 }

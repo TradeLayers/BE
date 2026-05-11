@@ -11,7 +11,7 @@ import (
 
 type NotificationRepository interface {
 	Create(ctx context.Context, db *gorm.DB, notification *model.ThresholdNotification) error
-	ListUnreadByUser(ctx context.Context, db *gorm.DB, userID string, limit int) ([]model.ThresholdNotification, error)
+	ListUnreadByUser(ctx context.Context, db *gorm.DB, userID string, ILimit int) ([]model.ThresholdNotification, error)
 	MarkReadByUser(ctx context.Context, db *gorm.DB, userID string, notificationID uuid.UUID) (bool, error)
 }
 
@@ -25,15 +25,15 @@ func (r *notificationRepository) Create(ctx context.Context, db *gorm.DB, notifi
 	return withContext(ctx, db).Create(notification).Error
 }
 
-func (r *notificationRepository) ListUnreadByUser(ctx context.Context, db *gorm.DB, userID string, limit int) ([]model.ThresholdNotification, error) {
-	if limit <= 0 {
-		limit = 20
+func (r *notificationRepository) ListUnreadByUser(ctx context.Context, db *gorm.DB, userID string, ILimit int) ([]model.ThresholdNotification, error) {
+	if ILimit <= 0 {
+		ILimit = 20
 	}
 
-	var notifications []model.ThresholdNotification
+	var notifications []model.ThresholdNotification = nil
 	err := withContext(ctx, db).Where("user_id = ? AND read_at IS NULL", userID).
 		Order("created_at DESC").
-		Limit(limit).
+		Limit(ILimit).
 		Find(&notifications).Error
 
 	return notifications, err

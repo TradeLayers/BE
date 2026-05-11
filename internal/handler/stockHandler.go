@@ -45,7 +45,7 @@ func (h *StockHandler) GetQuote(c *gin.Context) {
 func (h *StockHandler) GetQuotes(c *gin.Context) {
 	log := requestLogger(c)
 
-	var req model.QuotesRequest
+	var req model.QuotesRequest = model.QuotesRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Warn("failed to bind stock quotes request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidSymbol)

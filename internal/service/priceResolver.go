@@ -58,8 +58,8 @@ func stocksByID(ctx context.Context, repo repository.StockRepository) (map[uuid.
 		return nil, err
 	}
 	result := make(map[uuid.UUID]*model.Stock, len(all))
-	for i := range all {
-		result[all[i].ID] = &all[i]
+	for IIndex := range all {
+		result[all[IIndex].ID] = &all[IIndex]
 	}
 	return result, nil
 }

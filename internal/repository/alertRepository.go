@@ -24,7 +24,7 @@ func (r *alertRepository) Create(db *gorm.DB, alert *model.Alert) error {
 }
 
 func (r *alertRepository) ListByUser(db *gorm.DB, userID string) ([]model.Alert, error) {
-	var alerts []model.Alert
+	var alerts []model.Alert = nil
 	err := db.Where("user_id = ?", userID).Order("created_at DESC").Find(&alerts).Error
 	return alerts, err
 }
@@ -38,7 +38,7 @@ func (r *alertRepository) DeleteByUser(db *gorm.DB, userID string, alertID uuid.
 }
 
 func (r *alertRepository) MarkTriggered(db *gorm.DB, alertID uuid.UUID) (*model.Alert, error) {
-	var alert model.Alert
+	var alert model.Alert = model.Alert{}
 	err := db.Raw(
 		`UPDATE alerts
 		 SET triggered_at = COALESCE(triggered_at, NOW())

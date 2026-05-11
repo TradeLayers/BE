@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var DefaultStocks = map[string]string{
+var DefaultStocks map[string]string = map[string]string{
 	"AAPL":  "Apple Inc",
 	"MSFT":  "Microsoft Corp",
 	"GOOGL": "Alphabet Inc",

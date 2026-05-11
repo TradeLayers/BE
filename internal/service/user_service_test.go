@@ -214,7 +214,7 @@ func TestUpdateFields(t *testing.T) {
 			tt.setupMock(mock)
 
 			// Wrap UpdateUserFn to capture what map was passed to the repository
-			var capturedUpdates map[string]interface{}
+			var capturedUpdates map[string]interface{} = nil
 			if mock.UpdateUserFn != nil {
 				original := mock.UpdateUserFn
 				mock.UpdateUserFn = func(callCtx context.Context, ctx model.UserContext, updates map[string]interface{}) error {

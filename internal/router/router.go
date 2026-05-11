@@ -7,6 +7,7 @@ import (
 
 	"firebase.google.com/go/auth"
 	appErrors "github.com/TradeLayers/BE/internal/appErrors"
+	"github.com/TradeLayers/BE/internal/config"
 	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/requestlog"
 	"github.com/gin-contrib/cors"
@@ -20,7 +21,7 @@ import (
 	"github.com/TradeLayers/BE/internal/service"
 )
 
-var localFrontendOrigins = []string{
+var localFrontendOrigins []string = []string{
 	"http://localhost:3000",
 	"http://localhost:3001",
 	"http://localhost:3002",
@@ -29,7 +30,7 @@ var localFrontendOrigins = []string{
 	"http://127.0.0.1:3002",
 }
 
-func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient finnhub.Client, priceMap *finnhub.PriceMap, wsClient *finnhub.WSClient) *gin.Engine {
+func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient finnhub.Client, priceMap *finnhub.PriceMap, wsClient *finnhub.WSClient, cfg *config.Config) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		requestlog.FromContext(c.Request.Context()).Error("panic recovered", zap.Any("recovered", recovered))
@@ -74,9 +75,13 @@ func Setup(db *gorm.DB, log *zap.Logger, authClient *auth.Client, finnhubClient 
 	alertService := service.NewAlertService(db, stockRepo, alertRepo, finnhubClient, priceMap, wsClient)
 	alertHandler := handler.NewAlertHandler(alertService)
 
+	donationService := service.NewDonationService(cfg.StripeSecretKey, cfg.StripeDonationCurrency, cfg.StripeDonationProductName)
+	donationHandler := handler.NewDonationHandler(donationService, allowedOrigins)
+
 	api := r.Group("/api")
 	{
 		api.GET("/health", healthHanlder.Health)
+		api.POST("/donations/checkout", donationHandler.CreateCheckoutSession)
 
 		protected := api.Group("")
 
