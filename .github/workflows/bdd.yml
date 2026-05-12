@@ -1,0 +1,64 @@
+name: BDD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  bdd:
+    name: Run godog BDD scenarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tradelayers_bdd
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      BDD_DATABASE_URL: host=localhost port=5433 user=postgres password=postgres dbname=tradelayers_bdd sslmode=disable
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5433 -U postgres; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Postgres did not become ready" >&2
+          exit 1
+
+      - name: Run BDD scenarios
+        run: go test -tags bdd ./tests/bdd -v -count=1 | tee bdd-report.txt
+
+      - name: Upload BDD report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdd-report
+          path: bdd-report.txt
+          retention-days: 14
