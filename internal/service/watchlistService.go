@@ -1,18 +1,22 @@
 package service
 
 import (
+	"context"
+
 	"github.com/TradeLayers/BE/internal/appErrors"
 	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
+	"github.com/TradeLayers/BE/internal/requestlog"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type WatchlistService interface {
-	List(userCtx model.UserContext) ([]model.WatchlistItem, appErrors.DomainError)
-	Add(userCtx model.UserContext, symbol string) (*model.WatchlistItem, appErrors.DomainError)
-	Remove(userCtx model.UserContext, symbol string) appErrors.DomainError
-	UpdateThreshold(userCtx model.UserContext, symbol string, thresholdPrice float64) (*model.WatchlistItem, appErrors.DomainError)
+	List(ctx context.Context, userCtx model.UserContext) ([]model.WatchlistItem, appErrors.DomainError)
+	Add(ctx context.Context, userCtx model.UserContext, symbol string) (*model.WatchlistItem, appErrors.DomainError)
+	Remove(ctx context.Context, userCtx model.UserContext, symbol string) appErrors.DomainError
+	UpdateThreshold(ctx context.Context, userCtx model.UserContext, symbol string, thresholdPrice float64) (*model.WatchlistItem, appErrors.DomainError)
 }
 
 type watchlistService struct {
@@ -42,22 +46,26 @@ func NewWatchlistService(
 	}
 }
 
-func (s *watchlistService) List(userCtx model.UserContext) ([]model.WatchlistItem, appErrors.DomainError) {
-	entries, err := s.watchlistRepo.ListByUser(s.db, userCtx.FirebaseId)
+func (s *watchlistService) List(ctx context.Context, userCtx model.UserContext) ([]model.WatchlistItem, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
+	entries, err := s.watchlistRepo.ListByUser(ctx, s.db, userCtx.FirebaseId)
 	if err != nil {
+		log.Error("failed to list watchlist entries", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 	if len(entries) == 0 {
 		return []model.WatchlistItem{}, appErrors.ErrNone
 	}
 
-	stocks, err := s.stockRepo.GetAll()
+	stocks, err := s.stockRepo.GetAll(ctx)
 	if err != nil {
+		log.Error("failed to load stocks for watchlist", zap.String("firebase_id", userCtx.FirebaseId), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 	byID := make(map[string]*model.Stock, len(stocks))
-	for i := range stocks {
-		byID[stocks[i].ID.String()] = &stocks[i]
+	for IIndex := range stocks {
+		byID[stocks[IIndex].ID.String()] = &stocks[IIndex]
 	}
 
 	items := make([]model.WatchlistItem, 0, len(entries))
@@ -77,26 +85,31 @@ func (s *watchlistService) List(userCtx model.UserContext) ([]model.WatchlistIte
 	return items, appErrors.ErrNone
 }
 
-func (s *watchlistService) Add(userCtx model.UserContext, symbolRaw string) (*model.WatchlistItem, appErrors.DomainError) {
+func (s *watchlistService) Add(ctx context.Context, userCtx model.UserContext, symbolRaw string) (*model.WatchlistItem, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
 	symbol, domainErr := normalizeSymbol(symbolRaw)
 	if domainErr != appErrors.ErrNone {
 		return nil, domainErr
 	}
 
-	stock, err := ensureStock(s.stockRepo, s.finnhubClient, symbol)
+	stock, err := ensureStock(ctx, s.stockRepo, s.finnhubClient, symbol)
 	if err != nil {
+		log.Error("failed to ensure stock for watchlist", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
-	exists, err := s.watchlistRepo.Exists(s.db, userCtx.FirebaseId, stock.ID)
+	exists, err := s.watchlistRepo.Exists(ctx, s.db, userCtx.FirebaseId, stock.ID)
 	if err != nil {
+		log.Error("failed to check existing watchlist entry", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 	if exists {
 		return nil, appErrors.ErrAlreadyWatched
 	}
 
-	if err := s.watchlistRepo.Add(s.db, userCtx.FirebaseId, stock.ID); err != nil {
+	if err := s.watchlistRepo.Add(ctx, s.db, userCtx.FirebaseId, stock.ID); err != nil {
+		log.Error("failed to add watchlist entry", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 
@@ -110,22 +123,26 @@ func (s *watchlistService) Add(userCtx model.UserContext, symbolRaw string) (*mo
 	}, appErrors.ErrNone
 }
 
-func (s *watchlistService) Remove(userCtx model.UserContext, symbolRaw string) appErrors.DomainError {
+func (s *watchlistService) Remove(ctx context.Context, userCtx model.UserContext, symbolRaw string) appErrors.DomainError {
+	log := requestlog.FromContext(ctx)
+
 	symbol, domainErr := normalizeSymbol(symbolRaw)
 	if domainErr != appErrors.ErrNone {
 		return domainErr
 	}
 
-	stock, err := s.stockRepo.GetBySymbol(symbol)
+	stock, err := s.stockRepo.GetBySymbol(ctx, symbol)
 	if err != nil {
+		log.Error("failed to fetch stock for watchlist removal", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return appErrors.ErrInternal
 	}
 	if stock == nil {
 		return appErrors.ErrNotWatched
 	}
 
-	removed, err := s.watchlistRepo.Remove(s.db, userCtx.FirebaseId, stock.ID)
+	removed, err := s.watchlistRepo.Remove(ctx, s.db, userCtx.FirebaseId, stock.ID)
 	if err != nil {
+		log.Error("failed to remove watchlist entry", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return appErrors.ErrInternal
 	}
 	if !removed {
@@ -135,7 +152,9 @@ func (s *watchlistService) Remove(userCtx model.UserContext, symbolRaw string) a
 	return appErrors.ErrNone
 }
 
-func (s *watchlistService) UpdateThreshold(userCtx model.UserContext, symbolRaw string, thresholdPrice float64) (*model.WatchlistItem, appErrors.DomainError) {
+func (s *watchlistService) UpdateThreshold(ctx context.Context, userCtx model.UserContext, symbolRaw string, thresholdPrice float64) (*model.WatchlistItem, appErrors.DomainError) {
+	log := requestlog.FromContext(ctx)
+
 	if thresholdPrice <= 0 {
 		return nil, appErrors.ErrInvalidThreshold
 	}
@@ -145,16 +164,18 @@ func (s *watchlistService) UpdateThreshold(userCtx model.UserContext, symbolRaw 
 		return nil, domainErr
 	}
 
-	stock, err := s.stockRepo.GetBySymbol(symbol)
+	stock, err := s.stockRepo.GetBySymbol(ctx, symbol)
 	if err != nil {
+		log.Error("failed to fetch stock for watchlist threshold update", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 	if stock == nil {
 		return nil, appErrors.ErrNotWatched
 	}
 
-	updated, err := s.watchlistRepo.UpdateThreshold(s.db, userCtx.FirebaseId, stock.ID, thresholdPrice)
+	updated, err := s.watchlistRepo.UpdateThreshold(ctx, s.db, userCtx.FirebaseId, stock.ID, thresholdPrice)
 	if err != nil {
+		log.Error("failed to update watchlist threshold", zap.String("firebase_id", userCtx.FirebaseId), zap.String("symbol", symbol), zap.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 	if !updated {
@@ -169,4 +190,3 @@ func (s *watchlistService) UpdateThreshold(userCtx model.UserContext, symbolRaw 
 		ThresholdPrice: &threshold,
 	}, appErrors.ErrNone
 }
-

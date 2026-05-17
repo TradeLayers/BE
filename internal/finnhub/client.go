@@ -14,7 +14,7 @@ const baseURL = "https://finnhub.io/api/v1"
 // ErrNoData is returned by GetCandles when Finnhub responds with status
 // "no_data". Callers may choose to skip the symbol instead of failing the
 // whole batch.
-var ErrNoData = errors.New("finnhub: no candle data")
+var ErrNoData error = errors.New("finnhub: no candle data")
 
 type Client interface {
 	GetProfile(symbol string) (*ProfileResponse, error)
@@ -40,7 +40,7 @@ func NewClient(apiKey string) Client {
 func (c *finnhubClient) GetProfile(symbol string) (*ProfileResponse, error) {
 	endpoint := fmt.Sprintf("%s/stock/profile2?symbol=%s", baseURL, url.QueryEscape(symbol))
 
-	var resp ProfileResponse
+	var resp ProfileResponse = ProfileResponse{}
 	if err := c.doGet(endpoint, &resp); err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *finnhubClient) GetProfile(symbol string) (*ProfileResponse, error) {
 func (c *finnhubClient) Search(query string) (*SearchResponse, error) {
 	endpoint := fmt.Sprintf("%s/search?q=%s", baseURL, url.QueryEscape(query))
 
-	var resp SearchResponse
+	var resp SearchResponse = SearchResponse{}
 	if err := c.doGet(endpoint, &resp); err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (c *finnhubClient) Search(query string) (*SearchResponse, error) {
 func (c *finnhubClient) GetQuote(symbol string) (*QuoteResponse, error) {
 	endpoint := fmt.Sprintf("%s/quote?symbol=%s", baseURL, url.QueryEscape(symbol))
 
-	var resp QuoteResponse
+	var resp QuoteResponse = QuoteResponse{}
 	if err := c.doGet(endpoint, &resp); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (c *finnhubClient) GetCandles(symbol, resolution string, from, to int64) (*
 		return nil, fmt.Errorf("yahoo returned status %d", resp.StatusCode)
 	}
 
-	var body yahooChartResponse
+	var body yahooChartResponse = yahooChartResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}

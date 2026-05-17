@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"strings"
 
 	"github.com/TradeLayers/BE/internal/appErrors"
@@ -13,8 +14,8 @@ import (
 )
 
 type AlertService interface {
-	List(userCtx model.UserContext) ([]model.AlertView, appErrors.DomainError)
-	Create(userCtx model.UserContext, req model.AlertRequest) (*model.AlertView, appErrors.DomainError)
+	List(ctx context.Context, userCtx model.UserContext) ([]model.AlertView, appErrors.DomainError)
+	Create(ctx context.Context, userCtx model.UserContext, req model.AlertRequest) (*model.AlertView, appErrors.DomainError)
 	Delete(userCtx model.UserContext, id string) appErrors.DomainError
 }
 
@@ -45,7 +46,7 @@ func NewAlertService(
 	}
 }
 
-func (s *alertService) List(userCtx model.UserContext) ([]model.AlertView, appErrors.DomainError) {
+func (s *alertService) List(ctx context.Context, userCtx model.UserContext) ([]model.AlertView, appErrors.DomainError) {
 	alerts, err := s.alertRepo.ListByUser(s.db, userCtx.FirebaseId)
 	if err != nil {
 		return nil, appErrors.ErrInternal
@@ -54,7 +55,7 @@ func (s *alertService) List(userCtx model.UserContext) ([]model.AlertView, appEr
 		return []model.AlertView{}, appErrors.ErrNone
 	}
 
-	stocksByID, err := stocksByID(s.stockRepo)
+	stocksByID, err := stocksByID(ctx, s.stockRepo)
 	if err != nil {
 		return nil, appErrors.ErrInternal
 	}
@@ -81,7 +82,7 @@ func (s *alertService) List(userCtx model.UserContext) ([]model.AlertView, appEr
 	return views, appErrors.ErrNone
 }
 
-func (s *alertService) Create(userCtx model.UserContext, req model.AlertRequest) (*model.AlertView, appErrors.DomainError) {
+func (s *alertService) Create(ctx context.Context, userCtx model.UserContext, req model.AlertRequest) (*model.AlertView, appErrors.DomainError) {
 	symbol, domainErr := normalizeSymbol(req.Symbol)
 	if domainErr != appErrors.ErrNone {
 		return nil, domainErr
@@ -95,7 +96,7 @@ func (s *alertService) Create(userCtx model.UserContext, req model.AlertRequest)
 		return nil, appErrors.ErrInvalidFieldInformation
 	}
 
-	stock, err := ensureStock(s.stockRepo, s.finnhubClient, symbol)
+	stock, err := ensureStock(ctx, s.stockRepo, s.finnhubClient, symbol)
 	if err != nil {
 		return nil, appErrors.ErrInternal
 	}

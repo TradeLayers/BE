@@ -25,11 +25,11 @@ func (m *mockTokenVerifier) VerifyIDToken(ctx context.Context, idToken string) (
 
 func TestFirebaseAuth(t *testing.T) {
 	tests := []struct {
-		name             string
-		authHeader       string
-		mockVerifier     *mockTokenVerifier
-		expectedStatus   int
-		expectedContext  *model.UserContext
+		name            string
+		authHeader      string
+		mockVerifier    *mockTokenVerifier
+		expectedStatus  int
+		expectedContext *model.UserContext
 	}{
 		{
 			name:       "missing authorization header - returns 401",
@@ -117,7 +117,7 @@ func TestFirebaseAuth(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
-			var capturedContext *model.UserContext
+			var capturedContext *model.UserContext = nil
 			gin.SetMode(gin.TestMode)
 			w := httptest.NewRecorder()
 			r := gin.New()

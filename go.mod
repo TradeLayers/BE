@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/shopspring/decimal v1.4.0
+	github.com/stripe/stripe-go/v82 v82.3.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/api v0.271.0
 	google.golang.org/genproto v0.0.0-20260128011058-8636f8732409

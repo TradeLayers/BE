@@ -148,7 +148,7 @@ func (ws *WSClient) readLoop(ctx context.Context) {
 			return
 		}
 
-		var wsMsg WSMessage
+		var wsMsg WSMessage = WSMessage{}
 		if err := json.Unmarshal(message, &wsMsg); err != nil {
 			ws.logger.Error("finnhub ws unmarshal error", zap.Error(err))
 			continue

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 
 	"github.com/TradeLayers/BE/internal/model"
@@ -8,10 +9,10 @@ import (
 )
 
 type UserRepository interface {
-	GetUser(userCtx model.UserContext) (*model.User, error)
-	CreateUser(userCtx model.UserContext) (*model.User, error)
-	UpdateUser(userCtx model.UserContext, updates map[string]interface{}) error
-	DeleteUser(userCtx model.UserContext) error
+	GetUser(ctx context.Context, userCtx model.UserContext) (*model.User, error)
+	CreateUser(ctx context.Context, userCtx model.UserContext) (*model.User, error)
+	UpdateUser(ctx context.Context, userCtx model.UserContext, updates map[string]interface{}) error
+	DeleteUser(ctx context.Context, userCtx model.UserContext) error
 }
 
 type userRepository struct {
@@ -22,10 +23,10 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) GetUser(userCtx model.UserContext) (*model.User, error) {
-	var user model.User
+func (r *userRepository) GetUser(ctx context.Context, userCtx model.UserContext) (*model.User, error) {
+	var user model.User = model.User{}
 
-	err := r.db.Where("firebase_id = ?", userCtx.FirebaseId).First(&user).Error
+	err := withContext(ctx, r.db).Where("firebase_id = ?", userCtx.FirebaseId).First(&user).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
@@ -36,14 +37,14 @@ func (r *userRepository) GetUser(userCtx model.UserContext) (*model.User, error)
 	return &user, nil
 }
 
-func (r *userRepository) CreateUser(userCtx model.UserContext) (*model.User, error) {
+func (r *userRepository) CreateUser(ctx context.Context, userCtx model.UserContext) (*model.User, error) {
 	user := model.User{
 		FirebaseId: userCtx.FirebaseId,
 		Name:       userCtx.Name,
 		Email:      userCtx.Email,
 	}
 
-	err := r.db.Create(&user).Error
+	err := withContext(ctx, r.db).Create(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -51,13 +52,13 @@ func (r *userRepository) CreateUser(userCtx model.UserContext) (*model.User, err
 	return &user, nil
 }
 
-func (r *userRepository) UpdateUser(userCtx model.UserContext, updates map[string]interface{}) error {
-	err := r.db.Model(&model.User{}).Where("firebase_id = ?", userCtx.FirebaseId).Updates(updates).Error
+func (r *userRepository) UpdateUser(ctx context.Context, userCtx model.UserContext, updates map[string]interface{}) error {
+	err := withContext(ctx, r.db).Model(&model.User{}).Where("firebase_id = ?", userCtx.FirebaseId).Updates(updates).Error
 	return err
 }
 
-func (r *userRepository) DeleteUser(userCtx model.UserContext) error {
-	result := r.db.
+func (r *userRepository) DeleteUser(ctx context.Context, userCtx model.UserContext) error {
+	result := withContext(ctx, r.db).
 		Where("firebase_id = ?", userCtx.FirebaseId).
 		Delete(&model.User{})
 

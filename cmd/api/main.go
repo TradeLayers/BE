@@ -49,7 +49,7 @@ func main() {
 	defer cancelWS()
 	go wsClient.Run(ctx)
 
-	r := router.Setup(db, zapLogger, authClient, finnhubClient, priceMap, wsClient)
+	r := router.Setup(db, zapLogger, authClient, finnhubClient, priceMap, wsClient, cfg)
 
 	server.Run(cfg.AppPort, r, zapLogger)
 }

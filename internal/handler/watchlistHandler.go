@@ -7,6 +7,7 @@ import (
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/service"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type WatchlistHandler struct {
@@ -20,7 +21,7 @@ func NewWatchlistHandler(s service.WatchlistService) *WatchlistHandler {
 func (h *WatchlistHandler) List(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	items, err := h.service.List(*userCtx)
+	items, err := h.service.List(c.Request.Context(), *userCtx)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -31,14 +32,17 @@ func (h *WatchlistHandler) List(c *gin.Context) {
 
 func (h *WatchlistHandler) Add(c *gin.Context) {
 	userCtx := getUserContext(c)
+	ctx := c.Request.Context()
+	log := requestLogger(c)
 
-	var req model.WatchlistRequest
+	var req model.WatchlistRequest = model.WatchlistRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Warn("failed to bind watchlist add request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidSymbol)
 		return
 	}
 
-	item, err := h.service.Add(*userCtx, req.Symbol)
+	item, err := h.service.Add(ctx, *userCtx, req.Symbol)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -50,7 +54,7 @@ func (h *WatchlistHandler) Add(c *gin.Context) {
 func (h *WatchlistHandler) Remove(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	err := h.service.Remove(*userCtx, c.Param("symbol"))
+	err := h.service.Remove(c.Request.Context(), *userCtx, c.Param("symbol"))
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -61,14 +65,17 @@ func (h *WatchlistHandler) Remove(c *gin.Context) {
 
 func (h *WatchlistHandler) UpdateThreshold(c *gin.Context) {
 	userCtx := getUserContext(c)
+	ctx := c.Request.Context()
+	log := requestLogger(c)
 
-	var req model.WatchlistThresholdRequest
+	var req model.WatchlistThresholdRequest = model.WatchlistThresholdRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Warn("failed to bind watchlist threshold request", zap.Error(err))
 		appErrors.ReturnError(c, appErrors.ErrInvalidThreshold)
 		return
 	}
 
-	item, domainErr := h.service.UpdateThreshold(*userCtx, c.Param("symbol"), req.ThresholdPrice)
+	item, domainErr := h.service.UpdateThreshold(ctx, *userCtx, c.Param("symbol"), req.ThresholdPrice)
 	if domainErr != appErrors.ErrNone {
 		appErrors.ReturnError(c, domainErr)
 		return

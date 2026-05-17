@@ -131,7 +131,7 @@ func ensureBDDDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open postgres db: %v", err)
 	}
-	var count int64
+	var count int64 = 0
 	if err := db.Raw("SELECT COUNT(*) FROM pg_database WHERE datname = ?", "tradelayers_bdd").Scan(&count).Error; err != nil {
 		t.Fatalf("check bdd database: %v", err)
 	}
@@ -163,11 +163,11 @@ func applyMigrations(t *testing.T, db *gorm.DB) {
 	}
 }
 
-func (w *world) reset(balance int) error {
+func (w *world) reset(IBalance int) error {
 	if err := w.db.Exec("TRUNCATE alerts, watchlist, users_holdings, stock_transactions, stocks, users RESTART IDENTITY CASCADE").Error; err != nil {
 		return err
 	}
-	w.initialBalance = decimal.NewFromInt(int64(balance))
+	w.initialBalance = decimal.NewFromInt(int64(IBalance))
 	w.initialHolding = decimal.Zero
 	return w.db.Create(&model.User{
 		FirebaseId: testUserID,
@@ -177,20 +177,21 @@ func (w *world) reset(balance int) error {
 	}).Error
 }
 
-func (w *world) aUserWithBalanceAndLivePrice(balance, price int) error {
-	return w.reset(balance)
+func (w *world) aUserWithBalanceAndLivePrice(IBalance, IPrice int) error {
+	_ = IPrice
+	return w.reset(IBalance)
 }
 
-func (w *world) theUserBuysAAPL(qty int) error {
-	_, w.lastErr = w.portfolioService.Buy(w.userCtx, "AAPL", float64(qty))
+func (w *world) theUserBuysAAPL(IQty int) error {
+	_, w.lastErr = w.portfolioService.Buy(w.userCtx, "AAPL", float64(IQty))
 	return nil
 }
 
-func (w *world) balanceHoldingAndBoughtTransaction(balance, holding int) error {
-	if err := w.expectBalance(balance); err != nil {
+func (w *world) balanceHoldingAndBoughtTransaction(IBalance, IHolding int) error {
+	if err := w.expectBalance(IBalance); err != nil {
 		return err
 	}
-	if err := w.expectHolding(holding); err != nil {
+	if err := w.expectHolding(IHolding); err != nil {
 		return err
 	}
 	return w.expectTransaction(model.TransactionTypeBought)
@@ -203,21 +204,21 @@ func (w *world) requestFailsWith400AndBalanceUnchanged() error {
 	return w.expectBalanceDecimal(w.initialBalance)
 }
 
-func (w *world) aUserAlreadyHoldsAAPL(qty int) error {
+func (w *world) aUserAlreadyHoldsAAPL(IQty int) error {
 	if err := w.reset(1000); err != nil {
 		return err
 	}
-	_, w.lastErr = w.portfolioService.Buy(w.userCtx, "AAPL", float64(qty))
-	w.initialHolding = decimal.NewFromInt(int64(qty))
+	_, w.lastErr = w.portfolioService.Buy(w.userCtx, "AAPL", float64(IQty))
+	w.initialHolding = decimal.NewFromInt(int64(IQty))
 	return nil
 }
 
-func (w *world) theyHoldAAPL(qty int) error {
-	return w.expectHolding(qty)
+func (w *world) theyHoldAAPL(IQty int) error {
+	return w.expectHolding(IQty)
 }
 
-func (w *world) theUserSellsAAPL(qty int) error {
-	_, w.lastErr = w.portfolioService.Sell(w.userCtx, "AAPL", float64(qty))
+func (w *world) theUserSellsAAPL(IQty int) error {
+	_, w.lastErr = w.portfolioService.Sell(w.userCtx, "AAPL", float64(IQty))
 	return nil
 }
 
@@ -271,12 +272,12 @@ func (w *world) requestFailsWith409() error {
 	return nil
 }
 
-func (w *world) expectBalance(balance int) error {
-	return w.expectBalanceDecimal(decimal.NewFromInt(int64(balance)))
+func (w *world) expectBalance(IBalance int) error {
+	return w.expectBalanceDecimal(decimal.NewFromInt(int64(IBalance)))
 }
 
 func (w *world) expectBalanceDecimal(expected decimal.Decimal) error {
-	var user model.User
+	var user model.User = model.User{}
 	if err := w.db.Where("firebase_id = ?", testUserID).First(&user).Error; err != nil {
 		return err
 	}
@@ -286,19 +287,19 @@ func (w *world) expectBalanceDecimal(expected decimal.Decimal) error {
 	return nil
 }
 
-func (w *world) expectHolding(qty int) error {
+func (w *world) expectHolding(IQty int) error {
 	holdings, err := w.portfolioService.GetHoldings(w.userCtx)
 	if err != appErrors.ErrNone {
 		return fmt.Errorf("get holdings: %v", err)
 	}
-	if qty == 0 {
+	if IQty == 0 {
 		if len(holdings) != 0 {
 			return fmt.Errorf("expected no holdings, got %+v", holdings)
 		}
 		return nil
 	}
-	if len(holdings) != 1 || holdings[0].Symbol != "AAPL" || int(holdings[0].Quantity) != qty {
-		return fmt.Errorf("expected %d AAPL, got %+v", qty, holdings)
+	if len(holdings) != 1 || holdings[0].Symbol != "AAPL" || int(holdings[0].Quantity) != IQty {
+		return fmt.Errorf("expected %d AAPL, got %+v", IQty, holdings)
 	}
 	return nil
 }

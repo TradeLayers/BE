@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -8,9 +9,11 @@ import (
 	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
+	"github.com/TradeLayers/BE/internal/requestlog"
+	"go.uber.org/zap"
 )
 
-var DefaultStocks = map[string]string{
+var DefaultStocks map[string]string = map[string]string{
 	"AAPL":  "Apple Inc",
 	"MSFT":  "Microsoft Corp",
 	"GOOGL": "Alphabet Inc",
@@ -37,12 +40,12 @@ func DefaultSymbols() []string {
 }
 
 type StockService interface {
-	GetAllStocks() ([]model.StockListItem, appErrors.DomainError)
-	GetQuote(symbol string) (*model.StockQuote, appErrors.DomainError)
-	GetQuotes(symbols []string) ([]model.StockQuote, appErrors.DomainError)
-	SearchStocks(query string) ([]model.StockSearchResult, appErrors.DomainError)
-	GetProfile(symbol string) (*model.StockProfile, appErrors.DomainError)
-	GetCandles(symbols []string, resolution string, from, to int64) (*model.CandlesResponse, appErrors.DomainError)
+	GetAllStocks(ctx context.Context) ([]model.StockListItem, appErrors.DomainError)
+	GetQuote(ctx context.Context, symbol string) (*model.StockQuote, appErrors.DomainError)
+	GetQuotes(ctx context.Context, symbols []string) ([]model.StockQuote, appErrors.DomainError)
+	SearchStocks(ctx context.Context, query string) ([]model.StockSearchResult, appErrors.DomainError)
+	GetProfile(ctx context.Context, symbol string) (*model.StockProfile, appErrors.DomainError)
+	GetCandles(ctx context.Context, symbols []string, resolution string, from, to int64) (*model.CandlesResponse, appErrors.DomainError)
 }
 
 type stockService struct {
@@ -65,7 +68,7 @@ func (s *stockService) getPrice(symbol string) float64 {
 	return resolveCurrentPrice(s.priceMap, s.finnhubClient, symbol)
 }
 
-func (s *stockService) GetAllStocks() ([]model.StockListItem, appErrors.DomainError) {
+func (s *stockService) GetAllStocks(_ context.Context) ([]model.StockListItem, appErrors.DomainError) {
 	items := make([]model.StockListItem, 0, len(DefaultStocks))
 	for symbol, name := range DefaultStocks {
 		items = append(items, model.StockListItem{
@@ -77,7 +80,7 @@ func (s *stockService) GetAllStocks() ([]model.StockListItem, appErrors.DomainEr
 	return items, appErrors.ErrNone
 }
 
-func (s *stockService) GetQuote(symbol string) (*model.StockQuote, appErrors.DomainError) {
+func (s *stockService) GetQuote(_ context.Context, symbol string) (*model.StockQuote, appErrors.DomainError) {
 	symbol = strings.ToUpper(strings.TrimSpace(symbol))
 	if symbol == "" {
 		return nil, appErrors.ErrInvalidSymbol
@@ -96,7 +99,7 @@ func (s *stockService) GetQuote(symbol string) (*model.StockQuote, appErrors.Dom
 	}, appErrors.ErrNone
 }
 
-func (s *stockService) GetQuotes(symbols []string) ([]model.StockQuote, appErrors.DomainError) {
+func (s *stockService) GetQuotes(_ context.Context, symbols []string) ([]model.StockQuote, appErrors.DomainError) {
 	if len(symbols) == 0 {
 		return nil, appErrors.ErrInvalidSymbol
 	}
@@ -116,7 +119,7 @@ func (s *stockService) GetQuotes(symbols []string) ([]model.StockQuote, appError
 	return quotes, appErrors.ErrNone
 }
 
-func (s *stockService) SearchStocks(query string) ([]model.StockSearchResult, appErrors.DomainError) {
+func (s *stockService) SearchStocks(ctx context.Context, query string) ([]model.StockSearchResult, appErrors.DomainError) {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return nil, appErrors.ErrInvalidSymbol
@@ -124,6 +127,7 @@ func (s *stockService) SearchStocks(query string) ([]model.StockSearchResult, ap
 
 	resp, err := s.finnhubClient.Search(query)
 	if err != nil {
+		requestlog.FromContext(ctx).Error("failed to search stocks", zap.String("query", query), zap.Error(err))
 		return nil, appErrors.ErrFinnhubUnavailable
 	}
 
@@ -139,7 +143,7 @@ func (s *stockService) SearchStocks(query string) ([]model.StockSearchResult, ap
 	return results, appErrors.ErrNone
 }
 
-func (s *stockService) GetProfile(symbol string) (*model.StockProfile, appErrors.DomainError) {
+func (s *stockService) GetProfile(ctx context.Context, symbol string) (*model.StockProfile, appErrors.DomainError) {
 	symbol = strings.ToUpper(strings.TrimSpace(symbol))
 	if symbol == "" {
 		return nil, appErrors.ErrInvalidSymbol
@@ -147,6 +151,7 @@ func (s *stockService) GetProfile(symbol string) (*model.StockProfile, appErrors
 
 	resp, err := s.finnhubClient.GetProfile(symbol)
 	if err != nil {
+		requestlog.FromContext(ctx).Error("failed to fetch stock profile", zap.String("symbol", symbol), zap.Error(err))
 		return nil, appErrors.ErrFinnhubUnavailable
 	}
 
@@ -167,7 +172,7 @@ func (s *stockService) GetProfile(symbol string) (*model.StockProfile, appErrors
 	}, appErrors.ErrNone
 }
 
-func (s *stockService) GetCandles(symbols []string, resolution string, from, to int64) (*model.CandlesResponse, appErrors.DomainError) {
+func (s *stockService) GetCandles(ctx context.Context, symbols []string, resolution string, from, to int64) (*model.CandlesResponse, appErrors.DomainError) {
 	if len(symbols) == 0 {
 		return nil, appErrors.ErrInvalidSymbol
 	}
@@ -177,6 +182,7 @@ func (s *stockService) GetCandles(symbols []string, resolution string, from, to 
 
 	series := make(map[string]model.CandleSeries)
 	sawError := false
+	log := requestlog.FromContext(ctx)
 	for _, raw := range symbols {
 		symbol := strings.ToUpper(strings.TrimSpace(raw))
 		if symbol == "" {
@@ -187,6 +193,7 @@ func (s *stockService) GetCandles(symbols []string, resolution string, from, to 
 			if errors.Is(err, finnhub.ErrNoData) {
 				continue
 			}
+			log.Warn("failed to fetch stock candles", zap.String("symbol", symbol), zap.Error(err))
 			sawError = true
 			continue
 		}

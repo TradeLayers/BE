@@ -19,7 +19,7 @@ func NewNotificationHandler(s service.NotificationService) *NotificationHandler 
 func (h *NotificationHandler) ListUnread(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	notifications, domainErr := h.service.ListUnread(*userCtx)
+	notifications, domainErr := h.service.ListUnread(c.Request.Context(), *userCtx)
 	if domainErr != appErrors.ErrNone {
 		appErrors.ReturnError(c, domainErr)
 		return
@@ -31,7 +31,7 @@ func (h *NotificationHandler) ListUnread(c *gin.Context) {
 func (h *NotificationHandler) MarkRead(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	domainErr := h.service.MarkRead(*userCtx, c.Param("id"))
+	domainErr := h.service.MarkRead(c.Request.Context(), *userCtx, c.Param("id"))
 	if domainErr != appErrors.ErrNone {
 		appErrors.ReturnError(c, domainErr)
 		return

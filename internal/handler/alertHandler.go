@@ -20,7 +20,7 @@ func NewAlertHandler(s service.AlertService) *AlertHandler {
 func (h *AlertHandler) List(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	alerts, err := h.service.List(*userCtx)
+	alerts, err := h.service.List(c.Request.Context(), *userCtx)
 	if err != appErrors.ErrNone {
 		appErrors.ReturnError(c, err)
 		return
@@ -32,13 +32,13 @@ func (h *AlertHandler) List(c *gin.Context) {
 func (h *AlertHandler) Create(c *gin.Context) {
 	userCtx := getUserContext(c)
 
-	var req model.AlertRequest
+	var req model.AlertRequest = model.AlertRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		appErrors.ReturnError(c, appErrors.ErrInvalidFieldInformation)
 		return
 	}
 
-	alert, domainErr := h.service.Create(*userCtx, req)
+	alert, domainErr := h.service.Create(c.Request.Context(), *userCtx, req)
 	if domainErr != appErrors.ErrNone {
 		appErrors.ReturnError(c, domainErr)
 		return

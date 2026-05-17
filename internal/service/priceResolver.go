@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/TradeLayers/BE/internal/finnhub"
 	"github.com/TradeLayers/BE/internal/model"
 	"github.com/TradeLayers/BE/internal/repository"
@@ -25,8 +27,8 @@ func resolveCurrentPrice(priceMap *finnhub.PriceMap, client finnhub.Client, symb
 // catalogue name, then a Finnhub profile lookup, then the symbol itself as a
 // last resort. Trading and watchlist features both need this because the
 // stocks table is only populated on demand.
-func ensureStock(repo repository.StockRepository, client finnhub.Client, symbol string) (*model.Stock, error) {
-	stock, err := repo.GetBySymbol(symbol)
+func ensureStock(ctx context.Context, repo repository.StockRepository, client finnhub.Client, symbol string) (*model.Stock, error) {
+	stock, err := repo.GetBySymbol(ctx, symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -44,20 +46,20 @@ func ensureStock(repo repository.StockRepository, client finnhub.Client, symbol 
 	}
 
 	newStock := &model.Stock{StockName: name, Symbol: symbol}
-	if err := repo.Create(newStock); err != nil {
+	if err := repo.Create(ctx, newStock); err != nil {
 		return nil, err
 	}
 	return newStock, nil
 }
 
-func stocksByID(repo repository.StockRepository) (map[uuid.UUID]*model.Stock, error) {
-	all, err := repo.GetAll()
+func stocksByID(ctx context.Context, repo repository.StockRepository) (map[uuid.UUID]*model.Stock, error) {
+	all, err := repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 	result := make(map[uuid.UUID]*model.Stock, len(all))
-	for i := range all {
-		result[all[i].ID] = &all[i]
+	for IIndex := range all {
+		result[all[IIndex].ID] = &all[IIndex]
 	}
 	return result, nil
 }

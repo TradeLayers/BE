@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"time"
 
 	"github.com/TradeLayers/BE/internal/model"
@@ -9,8 +10,8 @@ import (
 )
 
 type TransactionsRepository interface {
-	Create(db *gorm.DB, tx *model.StockTransaction) error
-	ListByUser(db *gorm.DB, userID string, stockID *uuid.UUID, from, to *time.Time) ([]model.StockTransaction, error)
+	Create(ctx context.Context, db *gorm.DB, tx *model.StockTransaction) error
+	ListByUser(ctx context.Context, db *gorm.DB, userID string, stockID *uuid.UUID, from, to *time.Time) ([]model.StockTransaction, error)
 }
 
 type transactionsRepository struct{}
@@ -19,13 +20,13 @@ func NewTransactionsRepository() TransactionsRepository {
 	return &transactionsRepository{}
 }
 
-func (r *transactionsRepository) Create(db *gorm.DB, tx *model.StockTransaction) error {
-	return db.Create(tx).Error
+func (r *transactionsRepository) Create(ctx context.Context, db *gorm.DB, tx *model.StockTransaction) error {
+	return withContext(ctx, db).Create(tx).Error
 }
 
-func (r *transactionsRepository) ListByUser(db *gorm.DB, userID string, stockID *uuid.UUID, from, to *time.Time) ([]model.StockTransaction, error) {
-	var txs []model.StockTransaction
-	q := db.Where("user_id = ?", userID)
+func (r *transactionsRepository) ListByUser(ctx context.Context, db *gorm.DB, userID string, stockID *uuid.UUID, from, to *time.Time) ([]model.StockTransaction, error) {
+	var txs []model.StockTransaction = nil
+	q := withContext(ctx, db).Where("user_id = ?", userID)
 	if stockID != nil {
 		q = q.Where("stock_id = ?", *stockID)
 	}
