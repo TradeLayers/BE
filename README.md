@@ -219,14 +219,14 @@ The server starts on `http://localhost:5000`.
 
 ## Running with Docker
 
-Run `docker compose up --build` from the `utilities` directory.
+Run `docker compose up --build` from the sibling `Utilities` directory (see `Utilities/docker-compose.yml`).
 
 Backend JSON log files are written to `BE/logs/` on the host through the compose bind mount:
 
 - `BE/logs/app.log`
 - `BE/logs/error.log`
 
-The full-stack Docker setup lives in the [Utilities repo](https://github.com/TradeLayers/Utilities). It runs PostgreSQL, the backend, and the frontend together using `docker-compose`.
+The full-stack Docker setup lives in the [Utilities repo](https://github.com/TradeLayers/Utilities). It runs PostgreSQL, the backend, and the frontend together using `docker compose`.
 
 **Prerequisites:** Docker and Docker Compose installed, and the [Utilities](https://github.com/TradeLayers/Utilities) repo cloned as a sibling directory (`../Utilities/`).
 
@@ -236,13 +236,28 @@ make docker-down   # Stop and remove all containers
 make docker-logs   # Follow backend logs
 ```
 
-These commands run `docker-compose` from the Utilities repo. Under the hood:
-- `docker-compose up --build -d` — builds images from `../BE` and `../FE`, starts postgres + backend + frontend
-- `docker-compose down` — stops everything
+These `make` commands run `docker compose` from the Utilities repo. Under the hood:
+
+- `docker compose up --build -d` — builds images from `../BE` and `../FE`, starts postgres + backend + frontend
+- `docker compose down` — stops everything
 
 Once running:
+
 - Backend: http://localhost:5000
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:3001
+
+Note: The Docker compose setup expects a `FINNHUB_API_KEY` environment variable. When starting via `Utilities/docker-compose.yml`, create a `.env` file in the `Utilities` folder containing:
+
+```
+FINNHUB_API_KEY=your_finnhub_api_key_here
+```
+
+You can alternatively export the variable in your shell before running `docker compose`:
+
+```bash
+export FINNHUB_API_KEY=your_finnhub_api_key_here
+docker compose up --build
+```
 
 ## Make Commands
 
